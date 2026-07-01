@@ -52,6 +52,7 @@ function calcEmployee(income: number, dependents: number) {
 
   return {
     income,
+    taxableIncome: Math.round(taxableIncome * 10) / 10,
     socialInsurance: Math.round(socialInsuranceEst * 10) / 10,
     incomeTax: Math.round(incomeTax * 10) / 10,
     residentTax: Math.round(residentTax * 10) / 10,
@@ -82,8 +83,8 @@ function calcFreelance(
   // 国民健康保険（概算・上限あり）
   const kokuho = Math.min(afterBlue * 0.1 + 5, 87);
 
-  // 国民年金（2024年度 月額19,956円）
-  const nenkinMan = 1.9956 * 12 / 10;
+  // 国民年金（2026年度 月額約17,000円）
+  const nenkinMan = 1.7 * 12; // 月額1.7万円 × 12ヶ月
 
   // 所得控除
   const basicDeduction = 48;
@@ -108,6 +109,7 @@ function calcFreelance(
     expense,
     businessIncome: Math.round(businessIncome * 10) / 10,
     blueDeduction: Math.round(blueDeduction * 10) / 10,
+    taxableIncome: Math.round(taxableIncome * 10) / 10,
     kokuho: Math.round(kokuho * 10) / 10,
     nenkin: Math.round(nenkinMan * 10) / 10,
     incomeTax: Math.round(incomeTax * 10) / 10,
@@ -213,6 +215,7 @@ export default function Income() {
           </Card>
           <Card className="mt-3">
             <StatRow label="給与収入" value={fmtM(emp.income)} />
+            <StatRow label="課税所得" value={fmtM(emp.taxableIncome)} />
             <StatRow label="社会保険料（概算）" value={fmtM(emp.socialInsurance)} />
             <StatRow label="所得税" value={fmtM(emp.incomeTax)} />
             <StatRow label="住民税" value={fmtM(emp.residentTax)} />
@@ -266,6 +269,7 @@ export default function Income() {
             <StatRow label="年間売上" value={fmtM(frl.revenue)} />
             <StatRow label="経費" value={fmtM(frl.expense)} />
             <StatRow label="事業所得（売上−経費）" value={fmtM(frl.businessIncome)} />
+            <StatRow label="課税所得" value={fmtM(frl.taxableIncome)} />
             <StatRow label={`青色申告控除（${blueReturn === "none" ? "白色" : blueReturn + "万円"}）`} value={blueReturn === "none" ? "なし" : fmtM(frl.blueDeduction)} />
             <StatRow label="国民健康保険（概算）" value={fmtM(frl.kokuho)} />
             <StatRow label="国民年金" value={fmtM(frl.nenkin)} />
