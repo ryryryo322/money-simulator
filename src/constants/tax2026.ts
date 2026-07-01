@@ -39,8 +39,10 @@ export const KYUYO_DEDUCTION_BRACKETS = [
 
 /** 住民税率 */
 export const RESIDENT_TAX_RATE = 0.10;
-/** 住民税 均等割（万円） */
-export const RESIDENT_TAX_FLAT = 0.5;
+/** 住民税 均等割（万円）※2024年度から森林環境税1,000円追加 */
+export const RESIDENT_TAX_FLAT = 0.6; // 均等割5,000円 + 森林環境税1,000円
+/** 住民税 所得割率 */
+export const RESIDENT_TAX_INCOME_RATE = 0.10;
 
 /** 国民健康保険 概算レート */
 export const KOKUHO_RATE = 0.10;
@@ -50,7 +52,9 @@ export const KOKUHO_FIXED = 5;
 export const KOKUHO_MAX = 87;
 
 /** 国民年金 月額（万円）2026年度 */
-export const KOKUNEN_MONTHLY = 1.9956 * 12 / 10; // 年額換算
+export const KOKUNEN_MONTHLY_MAN = 1.7; // 月額1.7万円
+/** 国民年金 年額（万円）2026年度 */
+export const KOKUNEN_ANNUAL = KOKUNEN_MONTHLY_MAN * 12; // 20.4万円
 
 /** 個人事業税 税率 */
 export const BIZ_TAX_RATE = 0.05;
