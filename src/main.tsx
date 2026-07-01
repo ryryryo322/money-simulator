@@ -3,11 +3,12 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import "./styles/index.css";
 
-// ページのインポート
-// 新しいシミュレーターを追加するときはここに追記するだけでOK
 import Home from "./pages/Home";
 import LoanNisa from "./pages/LoanNisa";
 import Income from "./pages/Income";
+import MicroCorp from "./pages/MicroCorp";
+// 新しいシミュレーターはここに追加
+// import Furusato from "./pages/Furusato";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -16,8 +17,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <Route path="/" element={<Home />} />
         <Route path="/loan-nisa" element={<LoanNisa />} />
         <Route path="/income" element={<Income />} />
-        {/* 新しいシミュレーターはここに追加 */}
-        {/* <Route path="/furusato" element={<Furusato />} /> */}
+        <Route path="/micro-corp" element={<MicroCorp />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>

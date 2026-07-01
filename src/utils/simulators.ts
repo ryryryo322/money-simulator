@@ -32,11 +32,11 @@ export const SIMULATORS: SimulatorInfo[] = [
   },
   {
     id: "microcorp",
-    title: "マイクロ法人シミュレーター",
-    description: "法人化のメリットをシミュレーション",
+    title: "マイクロ法人 損得シミュレーター",
+    description: "個人事業とマイクロ法人を徹底比較",
     icon: "🏢",
-    path: "/microcorp",
-    available: false,
+    path: "/micro-corp",
+    available: true,
   },
   {
     id: "ideco",
