@@ -14,7 +14,7 @@ import {
   KOKUHO_RATE,
   KOKUHO_FIXED,
   KOKUHO_MAX,
-  KOKUNEN_MONTHLY,
+  KOKUNEN_MONTHLY_MAN,
   BIZ_TAX_RATE,
   BIZ_TAX_DEDUCTION,
   SHAKAI_HOKEN_RATE,
@@ -62,7 +62,7 @@ export function calcKokuho(income: number): number {
 
 /** 国民年金（年額・万円） */
 export function calcKokunen(): number {
-  return KOKUNEN_MONTHLY;
+  return KOKUNEN_MONTHLY_MAN * 12;
 }
 
 /** 個人事業税（万円単位） */
