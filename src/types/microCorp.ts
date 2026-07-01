@@ -62,3 +62,41 @@ export interface RewardTrial {
   totalBurden: number;
   diff: number; // 個人事業との差額
 }
+
+// ── 二刀流パターン 型定義 ───────────────────────
+
+/** 二刀流パターンの入力値 */
+export interface DualInputs {
+  soloRevenue: number;      // 個人事業の年間売上（万円）
+  soloExpense: number;      // 個人事業の年間経費（万円）
+  corpRevenue: number;      // 副業法人の年間売上（万円）
+  corpExpense: number;      // 副業法人の年間経費（万円）
+  blueReturn: import("@/constants/tax2026").BlueReturnType;
+  shokibo: number;          // 小規模企業共済（万円/月）
+  ideco: number;            // iDeCo（万円/月）
+  dependents: number;
+  hasSpouse: boolean;
+  hasBizTax: boolean;
+  monthlyReward: number;    // 役員報酬（万円/月）
+  maintenance: number;      // 法人維持費（万円/年）
+  hasCorpResidentTax: boolean;
+}
+
+/** 二刀流パターンの計算結果 */
+export interface DualResult {
+  soloOnly: {               // 個人事業のみの場合
+    takeHome: number;
+    kokuho: number;
+    kokunen: number;
+    incomeTax: number;
+    residentTax: number;
+  };
+  dualTotal: {              // 二刀流の場合
+    takeHome: number;
+    shakaiHoken: number;
+    koseiNenkin: number;
+    personalIncomeTax: number;
+    corpTax: number;
+  };
+  diff: number;             // 二刀流 - 個人事業のみ（プラスなら二刀流がお得）
+}

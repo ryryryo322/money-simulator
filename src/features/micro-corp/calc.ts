@@ -150,3 +150,107 @@ export function calcRewardTrials(
 export function getBestReward(trials: RewardTrial[]): number {
   return trials.reduce((best, t) => (t.takeHome > best.takeHome ? t : best)).monthlyReward;
 }
+
+// ── 二刀流パターンの計算 ─────────────────────────
+
+import type { DualInputs, DualResult } from "@/types/microCorp";
+
+/**
+ * 二刀流パターン（個人事業継続 + 副業法人）の手取りを計算します
+ */
+export function calcDual(inp: DualInputs): DualResult {
+  // ── 個人事業のみの場合（比較用）──
+  const soloTotal = calcSolo({
+    revenue: inp.soloRevenue + inp.corpRevenue,
+    expense: inp.soloExpense + inp.corpExpense,
+    blueReturn: inp.blueReturn,
+    shokibo: inp.shokibo,
+    ideco: inp.ideco,
+    age: 40,
+    hasSpouse: inp.hasSpouse,
+    dependents: inp.dependents,
+    hasBizTax: inp.hasBizTax,
+    prefecture: "東京都",
+  });
+
+  // ── 二刀流の場合 ──
+
+  // 個人事業側の計算（国保なし・社会保険は法人側で加入）
+  const soloBusinessIncome = Math.max(0, inp.soloRevenue - inp.soloExpense);
+  const { BLUE_RETURN_OPTIONS, BASIC_DEDUCTION, DEPENDENT_DEDUCTION_PER_PERSON, SPOUSE_DEDUCTION } = require("@/constants/tax2026");
+  const blueDeduction = Math.min(BLUE_RETURN_OPTIONS[inp.blueReturn], soloBusinessIncome);
+  const afterBlue = soloBusinessIncome - blueDeduction;
+
+  // 法人側の社会保険（役員報酬ベース）
+  const annualReward = inp.monthlyReward * 12;
+  const shakaiHoken = calcShakaiHoken(inp.monthlyReward) * 12;
+  const koseiNenkin = calcKoseiNenkin(inp.monthlyReward) * 12;
+
+  // 個人事業の課税所得（社会保険控除は法人側のものを使用）
+  const shokobo = inp.shokibo * 12;
+  const ideco = inp.ideco * 12;
+  const personalDeductions =
+    BASIC_DEDUCTION
+    + inp.dependents * DEPENDENT_DEDUCTION_PER_PERSON
+    + (inp.hasSpouse ? SPOUSE_DEDUCTION : 0)
+    + shakaiHoken + koseiNenkin
+    + shokobo + ideco;
+
+  const soloTaxableIncome = Math.max(0, afterBlue - personalDeductions);
+  const { calcIncomeTax: calcIT, calcResidentTax: calcRT } = require("@/utils/taxCalc");
+  const personalIncomeTax = calcIT(soloTaxableIncome);
+  const personalResidentTax = calcRT(soloTaxableIncome);
+
+  // 法人側の計算
+  const corpProfit = Math.max(0, inp.corpRevenue - inp.corpExpense - annualReward);
+  const { calcCorpTax: calcCT } = require("@/utils/taxCalc");
+  const corpTaxAmt = calcCT(corpProfit);
+  const corpResidentTax = inp.hasCorpResidentTax ? 7 : 0;
+
+  // 法人側の役員報酬から個人の手取り
+  const { calcKyuyoDeduction } = require("@/utils/taxCalc");
+  const kyuyoDeduction = calcKyuyoDeduction(annualReward);
+  const kyuyoIncome = Math.max(0, annualReward - kyuyoDeduction);
+  const rewardDeductions =
+    BASIC_DEDUCTION
+    + inp.dependents * DEPENDENT_DEDUCTION_PER_PERSON
+    + (inp.hasSpouse ? SPOUSE_DEDUCTION : 0)
+    + shakaiHoken + koseiNenkin;
+  const rewardTaxable = Math.max(0, kyuyoIncome - rewardDeductions);
+  const rewardIncomeTax = calcIT(rewardTaxable);
+  const rewardResidentTax = calcRT(rewardTaxable);
+
+  const personalTake = annualReward - rewardIncomeTax - rewardResidentTax - shakaiHoken - koseiNenkin;
+  const soloTake = afterBlue - personalIncomeTax - personalResidentTax;
+  const corpRetained = Math.max(0, corpProfit - corpTaxAmt - corpResidentTax - inp.maintenance);
+
+  const dualTakeHome = round1(personalTake + soloTake + corpRetained);
+
+  return {
+    soloOnly: {
+      takeHome: soloTotal.takeHome,
+      kokuho: soloTotal.kokuho,
+      kokunen: soloTotal.kokunen,
+      incomeTax: soloTotal.incomeTax,
+      residentTax: soloTotal.residentTax,
+    },
+    dualTotal: {
+      takeHome: dualTakeHome,
+      shakaiHoken: round1(shakaiHoken),
+      koseiNenkin: round1(koseiNenkin),
+      personalIncomeTax: round1(personalIncomeTax + rewardIncomeTax),
+      corpTax: round1(corpTaxAmt),
+    },
+    diff: round1(dualTakeHome - soloTotal.takeHome),
+  };
+}
+
+function calcShakaiHoken(monthlyReward: number): number {
+  const hyojun = Math.min(Math.max(monthlyReward, 5.8), 65);
+  return round1(hyojun * 0.0498);
+}
+
+function calcKoseiNenkin(monthlyReward: number): number {
+  const hyojun = Math.min(Math.max(monthlyReward, 5.8), 65);
+  return round1(hyojun * 0.0915);
+}

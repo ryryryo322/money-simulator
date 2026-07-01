@@ -14,10 +14,10 @@ import { Card, SectionTitle, SliderInput, StatRow } from "@/components/ui";
 import AdSlot from "@/components/AdSlot";
 import SimulatorGrid from "@/components/SimulatorGrid";
 
-import { calcSolo, calcCorp, calcRewardTrials, getBestReward } from "@/features/micro-corp/calc";
+import { calcSolo, calcCorp, calcRewardTrials, getBestReward, calcDual } from "@/features/micro-corp/calc";
 import { useSimulatorStore } from "@/store/simulatorStore";
 import { CORP_MAINTENANCE_DEFAULT, YAKUIN_TRIAL_LIST } from "@/constants/tax2026";
-import type { SoloInputs, CorpInputs } from "@/types/microCorp";
+import type { SoloInputs, CorpInputs, DualInputs } from "@/types/microCorp";
 import type { BlueReturnType } from "@/constants/tax2026";
 
 // ── FAQ データ ────────────────────────────────
@@ -110,10 +110,35 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 // ── メインコンポーネント ──────────────────────
 
 export default function MicroCorp() {
+  // パターン切り替え
+  const [pattern, setPattern] = useState<"solo" | "dual">("solo");
+
   // Zustandストアから状態を取得（ページ移動しても値が保持される）
   const { microCorp: { soloInp, corpInp }, setSoloInp, setCorpInp } = useSimulatorStore();
   const setSolo = setSoloInp;
   const setCorp = setCorpInp;
+
+  // 二刀流パターンの入力
+  const [dualInp, setDualInp] = useState<DualInputs>({
+    soloRevenue: 600,       // 個人事業の売上
+    soloExpense: 100,       // 個人事業の経費
+    corpRevenue: 300,       // 法人にする副業の売上
+    corpExpense: 50,        // 副業の経費
+    blueReturn: "65",
+    shokibo: 0,
+    ideco: 0,
+    dependents: 0,
+    hasSpouse: false,
+    hasBizTax: false,
+    monthlyReward: 8,
+    maintenance: 15,
+    hasCorpResidentTax: true,
+  });
+  const setDual = <K extends keyof DualInputs>(key: K, val: DualInputs[K]) =>
+    setDualInp(prev => ({ ...prev, [key]: val }));
+
+  // 二刀流計算
+  const dual = useMemo(() => pattern === "dual" ? calcDual(dualInp) : null, [pattern, dualInp]);
 
   // ── 計算 ──
   const solo = useMemo(() => calcSolo(soloInp), [soloInp]);
@@ -163,6 +188,30 @@ export default function MicroCorp() {
 
       <div className="space-y-10">
 
+        {/* パターン切り替え */}
+        <div className="flex gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-2xl">
+          <button
+            onClick={() => setPattern("solo")}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+              pattern === "solo"
+                ? "bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm"
+                : "text-gray-500 dark:text-gray-400"
+            }`}
+          >
+            🏢 法人化パターン
+          </button>
+          <button
+            onClick={() => setPattern("dual")}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+              pattern === "dual"
+                ? "bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm"
+                : "text-gray-500 dark:text-gray-400"
+            }`}
+          >
+            ⚡ 二刀流パターン
+          </button>
+        </div>
+
         {/* ヘッダー説明 */}
         <div className="text-center py-2">
           <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">【2026年制度対応】最終更新 2026年6月</p>
@@ -171,8 +220,8 @@ export default function MicroCorp() {
           </p>
         </div>
 
-        {/* ── STEP1: 個人事業 ── */}
-        <section>
+        {/* ── STEP1・2・3は法人化パターンのみ表示 ── */}
+        {pattern === "solo" && <section>
           <SectionTitle color="blue">STEP 1｜現在の個人事業</SectionTitle>
           <Card>
             {/* 都道府県 */}
@@ -248,8 +297,8 @@ export default function MicroCorp() {
           </Card>
         </section>
 
-        {/* ── STEP2: 法人設立後 ── */}
-        <section>
+        }
+        {pattern === "solo" && <section>
           <SectionTitle color="green">STEP 2｜法人設立後の設定</SectionTitle>
           <Card>
             <SliderInput
@@ -274,8 +323,71 @@ export default function MicroCorp() {
           </Card>
         </section>
 
-        {/* ── STEP3: 比較結果 ── */}
-        <section>
+        {/* ── 二刀流パターン入力 ── */}
+        {pattern === "dual" && (
+          <section>
+            <SectionTitle color="orange">⚡ 二刀流パターン設定</SectionTitle>
+            <div className="bg-brand-50 dark:bg-brand-900/10 rounded-2xl p-4 mb-4 text-sm text-gray-600 dark:text-gray-400">
+              個人事業を続けながら、副業（アフィリエイトなど）を法人化するパターンです。
+              法人の役員報酬で社会保険に加入するため、国民健康保険から脱退できます。
+            </div>
+            <Card>
+              <p className="text-xs font-bold text-blue-500 mb-3">👤 個人事業（継続）</p>
+              <SliderInput label="個人事業の年間売上" value={dualInp.soloRevenue} min={100} max={5000} step={10} unit="万円" onChange={v => setDual("soloRevenue", v)} />
+              <SliderInput label="個人事業の年間経費" value={dualInp.soloExpense} min={0} max={2000} step={10} unit="万円" onChange={v => setDual("soloExpense", v)} />
+            </Card>
+            <Card className="mt-3">
+              <p className="text-xs font-bold text-green-500 mb-3">🏢 副業法人（新設）</p>
+              <SliderInput label="副業の年間売上（法人）" value={dualInp.corpRevenue} min={0} max={2000} step={10} unit="万円" onChange={v => setDual("corpRevenue", v)} />
+              <SliderInput label="副業の年間経費（法人）" value={dualInp.corpExpense} min={0} max={1000} step={10} unit="万円" onChange={v => setDual("corpExpense", v)} />
+              <SliderInput label="役員報酬（月額）" value={dualInp.monthlyReward} min={0} max={30} step={1} unit="万円" onChange={v => setDual("monthlyReward", v)} />
+              <SliderInput label="法人維持費（年間）" value={dualInp.maintenance} min={0} max={100} step={1} unit="万円" onChange={v => setDual("maintenance", v)} />
+            </Card>
+          </section>
+        )}
+
+        {/* 二刀流の結果 */}
+        {pattern === "dual" && dual && (
+          <section>
+            <SectionTitle color="orange">📊 二刀流パターン 結果</SectionTitle>
+            <div className={`rounded-2xl border p-5 mb-4 text-center ${
+              dual.diff > 0
+                ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+                : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
+            }`}>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">個人事業のみとの年間差額</p>
+              <p className={`text-3xl font-black mb-1 ${dual.diff > 0 ? "text-green-500" : "text-blue-500"}`}>
+                {dual.diff > 0 ? "+" : ""}{fmtM(Math.round(dual.diff))}
+              </p>
+              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                {dual.diff > 0 ? "🏆 二刀流の方がお得です！" : "💡 個人事業のままがおすすめです"}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Card>
+                <p className="text-xs font-bold text-blue-500 mb-3">個人事業のみ</p>
+                <StatRow label="手取り合計" value={fmtM(dual.soloOnly.takeHome)} highlight />
+                <StatRow label="国民健康保険" value={fmtM(dual.soloOnly.kokuho)} />
+                <StatRow label="国民年金" value={fmtM(dual.soloOnly.kokunen)} />
+                <StatRow label="所得税" value={fmtM(dual.soloOnly.incomeTax)} />
+                <StatRow label="住民税" value={fmtM(dual.soloOnly.residentTax)} />
+              </Card>
+              <Card>
+                <p className="text-xs font-bold text-green-500 mb-3">二刀流</p>
+                <StatRow label="手取り合計" value={fmtM(dual.dualTotal.takeHome)} highlight />
+                <StatRow label="健康保険" value={fmtM(dual.dualTotal.shakaiHoken)} />
+                <StatRow label="厚生年金" value={fmtM(dual.dualTotal.koseiNenkin)} />
+                <StatRow label="個人所得税" value={fmtM(dual.dualTotal.personalIncomeTax)} />
+                <StatRow label="法人税" value={fmtM(dual.dualTotal.corpTax)} />
+                <StatRow label="法人維持費" value={fmtM(dualInp.maintenance)} />
+              </Card>
+            </div>
+          </section>
+        )}
+
+        }
+        {pattern === "solo" && <section>
           <SectionTitle color="orange">STEP 3｜比較結果</SectionTitle>
 
           {/* 結果サマリー */}
@@ -320,8 +432,8 @@ export default function MicroCorp() {
           </div>
         </section>
 
-        {/* ── グラフ ── */}
-        <section>
+        }
+        {pattern === "solo" && <section>
           <SectionTitle color="blue">📊 比較グラフ</SectionTitle>
           <Card>
             <ResponsiveContainer width="100%" height={260}>
@@ -339,8 +451,8 @@ export default function MicroCorp() {
           </Card>
         </section>
 
-        {/* ── 役員報酬別試算 ── */}
-        <section>
+        }
+        {pattern === "solo" && <section>
           <SectionTitle color="purple">💡 役員報酬別 自動試算</SectionTitle>
           <Card>
             <p className="text-sm font-bold text-brand-500 mb-3">
@@ -379,6 +491,7 @@ export default function MicroCorp() {
           </Card>
         </section>
 
+        }
         {/* ── 解説 ── */}
         <section>
           <SectionTitle color="blue">📖 なぜこの結果になるの？</SectionTitle>
