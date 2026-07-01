@@ -9,6 +9,7 @@ import {
 } from "recharts";
 
 import Layout from "@/components/Layout";
+import { useSimulatorStore } from "@/store/simulatorStore";
 import { Card, SectionTitle, SliderInput, StatRow, ChartTooltip } from "@/components/ui";
 import AdSlot from "@/components/AdSlot";
 import SimulatorGrid from "@/components/SimulatorGrid";
@@ -109,14 +110,10 @@ function calculate(inp: Inputs) {
 // ── メインコンポーネント ──────────────────────
 
 export default function LoanNisa() {
-  const [inp, setInp] = useState<Inputs>({
-    loanAmount: 3500, rate: 1.5, loanYears: 35, bonus: 20,
-    nisaMonthly: 5, nisaReturn: 5, currentAsset: 100,
-    currentAge: 35, retireAge: 65, income: 500,
-  });
-
-  const set = useCallback((key: keyof Inputs) => (v: number) =>
-    setInp((prev) => ({ ...prev, [key]: v })), []);
+  // Zustandストアから状態を取得（ページ移動しても値が保持される）
+  const { loanNisa: inp, setLoanNisa } = useSimulatorStore();
+  const set = useCallback((key: keyof typeof inp) => (v: number) =>
+    setLoanNisa(key, v), [setLoanNisa]);
 
   const result = useMemo(() => calculate(inp), [inp]);
 

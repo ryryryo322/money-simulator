@@ -15,6 +15,7 @@ import AdSlot from "@/components/AdSlot";
 import SimulatorGrid from "@/components/SimulatorGrid";
 
 import { calcSolo, calcCorp, calcRewardTrials, getBestReward } from "@/features/micro-corp/calc";
+import { useSimulatorStore } from "@/store/simulatorStore";
 import { CORP_MAINTENANCE_DEFAULT, YAKUIN_TRIAL_LIST } from "@/constants/tax2026";
 import type { SoloInputs, CorpInputs } from "@/types/microCorp";
 import type { BlueReturnType } from "@/constants/tax2026";
@@ -109,31 +110,10 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 // ── メインコンポーネント ──────────────────────
 
 export default function MicroCorp() {
-  // ── STEP1: 個人事業入力 ──
-  const [soloInp, setSoloInp] = useState<SoloInputs>({
-    revenue: 800,
-    expense: 150,
-    blueReturn: "65",
-    shokibo: 0,
-    ideco: 0,
-    age: 40,
-    hasSpouse: false,
-    dependents: 0,
-    hasBizTax: false,
-    prefecture: "東京都",
-  });
-
-  // ── STEP2: 法人設立後入力 ──
-  const [corpInp, setCorpInp] = useState<CorpInputs>({
-    monthlyReward: 10,
-    maintenance: CORP_MAINTENANCE_DEFAULT,
-    hasCorpResidentTax: true,
-  });
-
-  const setSolo = <K extends keyof SoloInputs>(key: K, val: SoloInputs[K]) =>
-    setSoloInp(prev => ({ ...prev, [key]: val }));
-  const setCorp = <K extends keyof CorpInputs>(key: K, val: CorpInputs[K]) =>
-    setCorpInp(prev => ({ ...prev, [key]: val }));
+  // Zustandストアから状態を取得（ページ移動しても値が保持される）
+  const { microCorp: { soloInp, corpInp }, setSoloInp, setCorpInp } = useSimulatorStore();
+  const setSolo = setSoloInp;
+  const setCorp = setCorpInp;
 
   // ── 計算 ──
   const solo = useMemo(() => calcSolo(soloInp), [soloInp]);

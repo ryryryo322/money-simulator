@@ -17,6 +17,7 @@ import AdSlot from "@/components/AdSlot";
 import SimulatorGrid from "@/components/SimulatorGrid";
 
 import { useIncomeSimulator } from "@/hooks/useIncomeSimulator";
+import { useSimulatorStore } from "@/store/simulatorStore";
 import type { EmployeeInputs, FreelanceInputs, CalcStep } from "@/types/income";
 import type { BlueReturnType } from "@/constants/tax2026";
 
@@ -76,31 +77,10 @@ const CalcBasis = ({ steps }: { steps: CalcStep[] }) => {
 // ── メインコンポーネント ──────────────────────
 
 export default function Income() {
-  // ── 会社員の入力 ──
-  const [empInp, setEmpInp] = useState<EmployeeInputs>({
-    income: 500,
-    dependents: 0,
-    hasSpouse: false,
-  });
-
-  // ── 個人事業主の入力 ──
-  const [frlInp, setFrlInp] = useState<FreelanceInputs>({
-    revenue: 700,
-    expense: 200,
-    blueReturn: "65",
-    shokibo: 0,
-    ideco: 0,
-    dependents: 0,
-    hasSpouse: false,
-    hasBizTax: false,
-    isTaxable: false,
-  });
-
-  // setterをuseCallbackで安定化
-  const setEmp = useCallback(<K extends keyof EmployeeInputs>(key: K, val: EmployeeInputs[K]) =>
-    setEmpInp(prev => ({ ...prev, [key]: val })), []);
-  const setFrl = useCallback(<K extends keyof FreelanceInputs>(key: K, val: FreelanceInputs[K]) =>
-    setFrlInp(prev => ({ ...prev, [key]: val })), []);
+  // Zustandストアから状態を取得（ページ移動しても値が保持される）
+  const { income: { empInp, frlInp }, setEmpInp, setFrlInp } = useSimulatorStore();
+  const setEmp = useCallback(setEmpInp, [setEmpInp]);
+  const setFrl = useCallback(setFrlInp, [setFrlInp]);
 
   // 計算はhookに委譲
   const { emp, frl, frlSteps } = useIncomeSimulator({ empInp, frlInp });

@@ -1,163 +1,149 @@
 // ============================================
-// 手取りシミュレーター カスタムフック
-// 計算ロジックをUIから分離します
-// Income.tsx はこのhookを呼ぶだけでOK
+// 手取りシミュレーター カスタムフック（リファクタリング済み）
+// lib/tax・lib/insurance の共通ライブラリを使用
+// 内部計算は円単位、表示は万円に変換
 // ============================================
 
 import { useMemo } from "react";
 import {
-  BASIC_DEDUCTION,
-  DEPENDENT_DEDUCTION_PER_PERSON,
-  SPOUSE_DEDUCTION,
-  BLUE_RETURN_OPTIONS,
-  KOKUNEN_ANNUAL,
-  KOKUHO_RATE,
-  KOKUHO_FIXED,
-  KOKUHO_MAX,
-  BIZ_TAX_RATE,
-  BIZ_TAX_DEDUCTION,
-  RESIDENT_TAX_RATE,
-  RESIDENT_TAX_FLAT,
-} from "@/constants/tax2026";
+  calcIncomeTax, calcResidentTax, calcKyuyoDeduction,
+  calcIncomeDeductions, calcBizTax,
+  BASIC_DEDUCTION_YEN,
+} from "@/lib/tax";
 import {
-  calcIncomeTax,
-  calcKyuyoDeduction,
-  round1,
-} from "@/utils/taxCalc";
+  calcKokuho, calcKokunen, calcEmployeeSocialInsurance,
+} from "@/lib/insurance";
+import { roundYen, manToYen, yenToMan } from "@/lib/formatter";
+import { BLUE_RETURN_OPTIONS } from "@/constants/tax2026";
 import type {
-  EmployeeInputs,
-  FreelanceInputs,
-  EmployeeResult,
-  FreelanceResult,
-  CalcStep,
+  EmployeeInputs, FreelanceInputs,
+  EmployeeResult, FreelanceResult, CalcStep,
 } from "@/types/income";
 
 // ── 会社員の計算 ─────────────────────────────
 
 function computeEmployee(inp: EmployeeInputs): EmployeeResult {
-  // 給与所得控除
-  const kyuyoDeduction = calcKyuyoDeduction(inp.income);
-  const kyuyoIncome = Math.max(0, inp.income - kyuyoDeduction);
+  // 入力を円に変換
+  const incomeYen = manToYen(inp.income);
 
-  // 社会保険料概算（健保+厚年+雇用: 約14.7%）
-  const socialInsurance = round1(inp.income * 0.147);
+  const kyuyoDeductionYen = calcKyuyoDeduction(incomeYen);
+  const kyuyoIncomeYen = Math.max(0, incomeYen - kyuyoDeductionYen);
+  const socialInsuranceYen = calcEmployeeSocialInsurance(incomeYen);
 
-  // 所得控除合計
-  const totalDeductions = round1(
-    BASIC_DEDUCTION
-    + inp.dependents * DEPENDENT_DEDUCTION_PER_PERSON
-    + (inp.hasSpouse ? SPOUSE_DEDUCTION : 0)
-    + socialInsurance
-  );
+  const totalDeductionsYen = calcIncomeDeductions({
+    dependents: inp.dependents,
+    hasSpouse: inp.hasSpouse,
+    socialInsuranceYen,
+  });
 
-  // 課税所得
-  const taxableIncome = Math.max(0, kyuyoIncome - totalDeductions);
+  const taxableIncomeYen = Math.max(0, kyuyoIncomeYen - totalDeductionsYen);
+  const incomeTaxYen = calcIncomeTax(taxableIncomeYen);
+  const residentTaxYen = calcResidentTax(taxableIncomeYen);
+  const totalBurdenYen = roundYen(incomeTaxYen + residentTaxYen + socialInsuranceYen);
+  const takeHomeYen = roundYen(incomeYen - totalBurdenYen);
 
-  // 税額
-  const incomeTax = round1(calcIncomeTax(taxableIncome));
-  const residentTax = round1(taxableIncome * RESIDENT_TAX_RATE + RESIDENT_TAX_FLAT);
-
-  const totalBurden = round1(incomeTax + residentTax + socialInsurance);
-  const takeHome = round1(inp.income - totalBurden);
-
+  // 表示用に万円へ変換
   return {
     income: inp.income,
-    kyuyoDeduction: round1(kyuyoDeduction),
-    kyuyoIncome: round1(kyuyoIncome),
-    totalDeductions,
-    taxableIncome: round1(taxableIncome),
-    socialInsurance,
-    incomeTax,
-    residentTax,
-    totalBurden,
-    takeHome,
-    takeHomeRate: round1((takeHome / Math.max(inp.income, 1)) * 100),
+    kyuyoDeduction: yenToMan(kyuyoDeductionYen),
+    kyuyoIncome: yenToMan(kyuyoIncomeYen),
+    totalDeductions: yenToMan(totalDeductionsYen),
+    taxableIncome: yenToMan(taxableIncomeYen),
+    socialInsurance: yenToMan(socialInsuranceYen),
+    incomeTax: yenToMan(incomeTaxYen),
+    residentTax: yenToMan(residentTaxYen),
+    totalBurden: yenToMan(totalBurdenYen),
+    takeHome: yenToMan(takeHomeYen),
+    takeHomeRate: Math.round((takeHomeYen / Math.max(incomeYen, 1)) * 1000) / 10,
   };
 }
 
 // ── 個人事業主の計算 ─────────────────────────
 
 function computeFreelance(inp: FreelanceInputs): FreelanceResult {
-  // 事業所得
-  const businessIncome = Math.max(0, inp.revenue - inp.expense);
+  // 入力を円に変換
+  const revenueYen = manToYen(inp.revenue);
+  const expenseYen = manToYen(inp.expense);
+  const businessIncomeYen = Math.max(0, revenueYen - expenseYen);
 
   // 青色申告控除
-  const blueDeduction = Math.min(BLUE_RETURN_OPTIONS[inp.blueReturn], businessIncome);
-  const afterBlue = round1(businessIncome - blueDeduction);
+  const blueDeductionYen = Math.min(
+    manToYen(BLUE_RETURN_OPTIONS[inp.blueReturn]),
+    businessIncomeYen
+  );
+  const afterBlueYen = roundYen(businessIncomeYen - blueDeductionYen);
 
-  // 小規模企業共済・iDeCo（年額）
-  const shokoboAnnual = round1(inp.shokibo * 12);
-  const idecoAnnual = round1(inp.ideco * 12);
+  // 小規模企業共済・iDeCo（年額・円）
+  const shokoboYen = roundYen(manToYen(inp.shokibo) * 12);
+  const idecoYen = roundYen(manToYen(inp.ideco) * 12);
 
-  // 個人事業税（業種によって不要）
-  const bizTax = inp.hasBizTax
-    ? round1(Math.max(0, (afterBlue - BIZ_TAX_DEDUCTION) * BIZ_TAX_RATE))
-    : 0;
+  // 個人事業税
+  const bizTaxYen = calcBizTax(afterBlueYen, inp.hasBizTax);
 
-  // 国民健康保険（概算。自治体によって異なります）
-  const kokuho = round1(Math.min(afterBlue * KOKUHO_RATE + KOKUHO_FIXED, KOKUHO_MAX));
+  // 国民健康保険・国民年金
+  const kokuhoYen = calcKokuho({ businessIncomeYen: afterBlueYen });
+  const kokunenYen = calcKokunen();
 
-  // 国民年金（2026年度）
-  const kokunen = round1(KOKUNEN_ANNUAL);
-
-  // 消費税（課税事業者のみ。簡易計算）
-  // ※正確には簡易課税・原則課税で異なります
-  const consumptionTax = inp.isTaxable
-    ? round1(Math.max(0, (inp.revenue - inp.expense) * 0.1))
+  // 消費税（課税事業者のみ・簡易計算）
+  const consumptionTaxYen = inp.isTaxable
+    ? roundYen(Math.max(0, businessIncomeYen * 0.1))
     : 0;
 
   // 所得控除合計
-  const totalDeductions = round1(
-    BASIC_DEDUCTION
-    + inp.dependents * DEPENDENT_DEDUCTION_PER_PERSON
-    + (inp.hasSpouse ? SPOUSE_DEDUCTION : 0)
-    + kokuho
-    + kokunen
-    + shokoboAnnual
-    + idecoAnnual
-  );
+  const totalDeductionsYen = calcIncomeDeductions({
+    dependents: inp.dependents,
+    hasSpouse: inp.hasSpouse,
+    socialInsuranceYen: kokuhoYen + kokunenYen,
+    shokoboYen,
+    idecoYen,
+  });
 
   // 課税所得
-  const taxableIncome = Math.max(0, afterBlue - totalDeductions);
+  const taxableIncomeYen = Math.max(0, afterBlueYen - totalDeductionsYen);
 
   // 税額
-  const incomeTax = round1(calcIncomeTax(taxableIncome));
-  const residentTax = round1(taxableIncome * RESIDENT_TAX_RATE + RESIDENT_TAX_FLAT);
+  const incomeTaxYen = calcIncomeTax(taxableIncomeYen);
+  const residentTaxYen = calcResidentTax(taxableIncomeYen);
 
-  const totalBurden = round1(incomeTax + residentTax + kokuho + kokunen + bizTax + consumptionTax);
-  const takeHome = round1(businessIncome - totalBurden);
+  const totalBurdenYen = roundYen(
+    incomeTaxYen + residentTaxYen + kokuhoYen + kokunenYen + bizTaxYen + consumptionTaxYen
+  );
+  const takeHomeYen = roundYen(businessIncomeYen - totalBurdenYen);
 
+  // 万円に変換して返す
+  const m = (y: number) => yenToMan(y);
   return {
     revenue: inp.revenue,
     expense: inp.expense,
-    businessIncome: round1(businessIncome),
-    blueDeduction: round1(blueDeduction),
-    afterBlue,
-    shokoboAnnual,
-    idecoAnnual,
-    kokuho,
-    kokunen,
-    bizTax,
-    consumptionTax,
-    totalDeductions,
-    taxableIncome: round1(taxableIncome),
-    incomeTax,
-    residentTax,
-    totalBurden,
-    takeHome,
-    takeHomeRate: round1((takeHome / Math.max(inp.revenue, 1)) * 100),
+    businessIncome: m(businessIncomeYen),
+    blueDeduction: m(blueDeductionYen),
+    afterBlue: m(afterBlueYen),
+    shokoboAnnual: m(shokoboYen),
+    idecoAnnual: m(idecoYen),
+    kokuho: m(kokuhoYen),
+    kokunen: m(kokunenYen),
+    bizTax: m(bizTaxYen),
+    consumptionTax: m(consumptionTaxYen),
+    totalDeductions: m(totalDeductionsYen),
+    taxableIncome: m(taxableIncomeYen),
+    incomeTax: m(incomeTaxYen),
+    residentTax: m(residentTaxYen),
+    totalBurden: m(totalBurdenYen),
+    takeHome: m(takeHomeYen),
+    takeHomeRate: Math.round((takeHomeYen / Math.max(revenueYen, 1)) * 1000) / 10,
   };
 }
 
-// ── 計算根拠ステップ生成 ──────────────────────
+// ── 計算根拠ステップ ─────────────────────────
 
 export function buildFreelanceSteps(r: FreelanceResult): CalcStep[] {
+  const basicDeductionMan = yenToMan(BASIC_DEDUCTION_YEN);
   return [
     { label: "年間売上", value: r.revenue },
     { label: "経費", value: r.expense, isDeduction: true },
     { label: "事業所得", value: r.businessIncome, isResult: true },
-    { label: `青色申告控除`, value: r.blueDeduction, isDeduction: true },
-    { label: "基礎控除", value: BASIC_DEDUCTION, isDeduction: true },
+    { label: "青色申告控除", value: r.blueDeduction, isDeduction: true },
+    { label: "基礎控除", value: basicDeductionMan, isDeduction: true },
     { label: "国民健康保険", value: r.kokuho, isDeduction: true },
     { label: "国民年金", value: r.kokunen, isDeduction: true },
     ...(r.shokoboAnnual > 0 ? [{ label: "小規模企業共済", value: r.shokoboAnnual, isDeduction: true }] : []),
@@ -182,6 +168,5 @@ export function useIncomeSimulator({ empInp, frlInp }: UseIncomeSimulatorProps) 
   const emp = useMemo(() => computeEmployee(empInp), [empInp]);
   const frl = useMemo(() => computeFreelance(frlInp), [frlInp]);
   const frlSteps = useMemo(() => buildFreelanceSteps(frl), [frl]);
-
   return { emp, frl, frlSteps };
 }
