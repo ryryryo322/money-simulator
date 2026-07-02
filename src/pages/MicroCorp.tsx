@@ -295,9 +295,8 @@ export default function MicroCorp() {
               <p className="text-xs text-gray-400 mt-1">ライター・エンジニアなど業種によって不要な場合あり</p>
             </div>
           </Card>
-        </section>
+        </section>}
 
-        }
         {pattern === "solo" && <section>
           <SectionTitle color="green">STEP 2｜法人設立後の設定</SectionTitle>
           <Card>
@@ -386,7 +385,6 @@ export default function MicroCorp() {
           </section>
         )}
 
-        }
         {pattern === "solo" && <section>
           <SectionTitle color="orange">STEP 3｜比較結果</SectionTitle>
 
@@ -430,9 +428,8 @@ export default function MicroCorp() {
               <StatRow label="手取り" value={fmtM(corp.takeHome)} highlight />
             </Card>
           </div>
-        </section>
+        </section>}
 
-        }
         {pattern === "solo" && <section>
           <SectionTitle color="blue">📊 比較グラフ</SectionTitle>
           <Card>
@@ -449,9 +446,8 @@ export default function MicroCorp() {
               </BarChart>
             </ResponsiveContainer>
           </Card>
-        </section>
+        </section>}
 
-        }
         {pattern === "solo" && <section>
           <SectionTitle color="purple">💡 役員報酬別 自動試算</SectionTitle>
           <Card>
@@ -489,9 +485,8 @@ export default function MicroCorp() {
               </table>
             </div>
           </Card>
-        </section>
+        </section>}
 
-        }
         {/* ── 解説 ── */}
         <section>
           <SectionTitle color="blue">📖 なぜこの結果になるの？</SectionTitle>
