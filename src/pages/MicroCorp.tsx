@@ -320,7 +320,7 @@ export default function MicroCorp() {
               </div>
             </div>
           </Card>
-        </section>
+        </section>}
 
         {/* ── 二刀流パターン入力 ── */}
         {pattern === "dual" && (

@@ -1,0 +1,23 @@
+# 依存パッケージ（npm installで生成される）
+node_modules/
+
+# ビルド成果物
+dist/
+dist-ssr/
+
+# 環境変数ファイル
+.env
+.env.local
+.env.*.local
+
+# VSCodeの個人設定（launch.jsonは除外しない）
+.vscode/settings.json
+.vscode/extensions.json
+
+# OS関連
+.DS_Store
+Thumbs.db
+
+# ログ
+*.log
+npm-debug.log*
