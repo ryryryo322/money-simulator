@@ -42,6 +42,10 @@ const incomeInitial: IncomeState = {
     revenue: 700, expense: 200, blueReturn: "65",
     shokibo: 0, ideco: 0, dependents: 0, hasSpouse: false,
     hasBizTax: false, isTaxable: false,
+    age: 35, members: 1, kokuhoCity: "東京都（23区）",
+    manualIryoRate: 8.0, manualShienRate: 2.7, manualKaigoRate: 2.2,
+    manualIryoKintou: 25000, manualShienKintou: 8000,
+    manualKaigoKintou: 11000, manualHeitou: 20000,
   },
 };
 
