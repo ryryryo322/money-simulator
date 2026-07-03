@@ -17,6 +17,7 @@ import AdSlot from "@/components/AdSlot";
 import SimulatorGrid from "@/components/SimulatorGrid";
 
 import { useIncomeSimulator } from "@/hooks/useIncomeSimulator";
+import { KOKUHO_RATES } from "@/constants/kokuhoRates";
 import { useSimulatorStore } from "@/store/simulatorStore";
 import type { EmployeeInputs, FreelanceInputs, CalcStep } from "@/types/income";
 import type { BlueReturnType } from "@/constants/tax2026";
@@ -168,6 +169,87 @@ export default function Income() {
             <SliderInput label="年間売上" value={frlInp.revenue} min={100} max={5000} step={10} unit="万円" onChange={v => setFrl("revenue", v)} />
             <SliderInput label="年間経費" value={frlInp.expense} min={0} max={2000} step={10} unit="万円" onChange={v => setFrl("expense", v)} />
 
+            {/* 年齢・世帯人数 */}
+            <SliderInput label="年齢" value={frlInp.age} min={20} max={70} step={1} unit="歳" onChange={v => setFrl("age", v)} />
+            <div className="mb-5">
+              <label className="text-sm font-medium text-gray-600 dark:text-gray-400 block mb-2">
+                国保加入人数（世帯）
+              </label>
+              <select
+                value={frlInp.members}
+                onChange={e => setFrl("members", Number(e.target.value))}
+                className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+              >
+                {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}人</option>)}
+              </select>
+            </div>
+
+            {/* 自治体選択 */}
+            <div className="mb-5">
+              <label className="text-sm font-medium text-gray-600 dark:text-gray-400 block mb-2">
+                国保の自治体
+              </label>
+              <select
+                value={frlInp.kokuhoCity}
+                onChange={e => setFrl("kokuhoCity", e.target.value)}
+                className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+              >
+                {KOKUHO_RATES.map(r => <option key={r.city} value={r.city}>{r.city}</option>)}
+                <option value="manual">その他（手動入力）</option>
+              </select>
+              <p className="text-xs text-gray-400 mt-1">国保料率は自治体によって大きく異なります</p>
+            </div>
+
+            {/* 手動入力エリア */}
+            {frlInp.kokuhoCity === "manual" && (
+              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 mb-5 space-y-3">
+                <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">料率を手動入力（%）</p>
+                {[
+                  { label: "医療分 所得割率", key: "manualIryoRate" as const },
+                  { label: "支援金分 所得割率", key: "manualShienRate" as const },
+                  { label: "介護分 所得割率（40〜64歳）", key: "manualKaigoRate" as const },
+                ].map(({ label, key }) => (
+                  <div key={key} className="flex items-center gap-3">
+                    <span className="text-xs text-gray-600 dark:text-gray-400 w-40">{label}</span>
+                    <input
+                      type="number" step="0.1" min="0" max="20"
+                      value={frlInp[key]}
+                      onChange={e => setFrl(key, Number(e.target.value))}
+                      className="w-20 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1 text-sm text-gray-900 dark:text-white text-right"
+                    />
+                    <span className="text-xs text-gray-400">%</span>
+                  </div>
+                ))}
+                <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mt-3 mb-2">均等割（円/人）</p>
+                {[
+                  { label: "医療分", key: "manualIryoKintou" as const },
+                  { label: "支援金分", key: "manualShienKintou" as const },
+                  { label: "介護分（40〜64歳）", key: "manualKaigoKintou" as const },
+                ].map(({ label, key }) => (
+                  <div key={key} className="flex items-center gap-3">
+                    <span className="text-xs text-gray-600 dark:text-gray-400 w-40">{label}</span>
+                    <input
+                      type="number" step="100" min="0"
+                      value={frlInp[key]}
+                      onChange={e => setFrl(key, Number(e.target.value))}
+                      className="w-24 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1 text-sm text-gray-900 dark:text-white text-right"
+                    />
+                    <span className="text-xs text-gray-400">円</span>
+                  </div>
+                ))}
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-gray-600 dark:text-gray-400 w-40">平等割（世帯）</span>
+                  <input
+                    type="number" step="100" min="0"
+                    value={frlInp.manualHeitou}
+                    onChange={e => setFrl("manualHeitou", Number(e.target.value))}
+                    className="w-24 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1 text-sm text-gray-900 dark:text-white text-right"
+                  />
+                  <span className="text-xs text-gray-400">円</span>
+                </div>
+              </div>
+            )}
+
             {/* 青色申告 */}
             <div className="mb-5">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">青色申告控除</p>
@@ -215,7 +297,14 @@ export default function Income() {
             <StatRow label={`青色申告控除（${frlInp.blueReturn === "none" ? "白色" : frlInp.blueReturn + "万円"}）`} value={frlInp.blueReturn === "none" ? "なし" : fmtM(frl.blueDeduction)} />
             {frl.shokoboAnnual > 0 && <StatRow label="小規模企業共済（年額）" value={fmtM(frl.shokoboAnnual)} />}
             {frl.idecoAnnual > 0 && <StatRow label="iDeCo（年額）" value={fmtM(frl.idecoAnnual)} />}
-            <StatRow label="国民健康保険（概算）" value={fmtM(frl.kokuho)} />
+            <StatRow label={`国民健康保険（${frlInp.kokuhoCity}）`} value={fmtM(frl.kokuho)} />
+            {frl.kokuhoKaigo > 0 && (
+              <div className="pl-4">
+                <StatRow label="　医療分" value={fmtM(frl.kokuhoIryo)} />
+                <StatRow label="　支援金分" value={fmtM(frl.kokuhoShien)} />
+                <StatRow label="　介護分" value={fmtM(frl.kokuhoKaigo)} />
+              </div>
+            )}
             <StatRow label="国民年金（2026年度）" value={fmtM(frl.kokunen)} />
             {frlInp.hasBizTax && <StatRow label="個人事業税" value={fmtM(frl.bizTax)} />}
             <StatRow label="消費税" value={frlInp.isTaxable ? fmtM(frl.consumptionTax) : "免税（計算対象外）"} />

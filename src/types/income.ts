@@ -22,6 +22,17 @@ export interface FreelanceInputs {
   hasSpouse: boolean;          // 配偶者控除あり
   hasBizTax: boolean;          // 個人事業税あり
   isTaxable: boolean;          // 消費税課税事業者
+  age: number;                 // 年齢（国保介護分計算用）
+  members: number;             // 世帯の国保加入人数
+  kokuhoCity: string;          // 選択した自治体名（"manual"の場合は手動入力）
+  // 手動入力用料率
+  manualIryoRate: number;
+  manualShienRate: number;
+  manualKaigoRate: number;
+  manualIryoKintou: number;
+  manualShienKintou: number;
+  manualKaigoKintou: number;
+  manualHeitou: number;
 }
 
 /** 会社員の計算結果 */
@@ -48,7 +59,10 @@ export interface FreelanceResult {
   afterBlue: number;           // 青色控除後所得
   shokoboAnnual: number;       // 小規模企業共済（年額）
   idecoAnnual: number;         // iDeCo（年額）
-  kokuho: number;              // 国民健康保険
+  kokuho: number;              // 国民健康保険合計
+  kokuhoIryo: number;          // 国保 医療分
+  kokuhoShien: number;         // 国保 支援金分
+  kokuhoKaigo: number;         // 国保 介護分
   kokunen: number;             // 国民年金
   bizTax: number;              // 個人事業税
   consumptionTax: number;      // 消費税
