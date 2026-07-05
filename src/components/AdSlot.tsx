@@ -1,72 +1,144 @@
 // ============================================
 // 広告スロットコンポーネント
-// 広告コードを後から簡単に貼り付けられるように設計しています
+// 広告コードを後から簡単に追加できる設計
 //
 // 使い方:
-//   <AdSlot slot="result" />   ← 結果の下
-//   <AdSlot slot="faq" />      ← FAQの下
-//   <AdSlot slot="footer" />   ← ページ最下部
+//   <AdSlot slot="result" context="nisa" />  ← NISA結果の下
+//   <AdSlot slot="result" context="income" /> ← 手取り結果の下
+//   <AdSlot slot="result" context="micro" />  ← マイクロ法人結果の下
+//   <AdSlot slot="faq" />
+//   <AdSlot slot="footer" />
 // ============================================
 
-import type { AffiliateLink, AdSlotType } from "@/types";
+import type { AdSlotType } from "@/types";
 
-// ── アフィリエイトリンクの設定 ──────────────────
-// 承認されたリンクをここに追記するだけでOKです
-const AFFILIATE_LINKS: AffiliateLink[] = [
+// ── アフィリエイトリンク定義 ───────────────────
+
+interface AdItem {
+  id: string;
+  href: string;
+  label: string;
+  description: string;
+  subtext: string;
+  icon: string;
+  color: "blue" | "green" | "purple" | "orange";
+  // どのコンテキストで表示するか（未指定は全ページ）
+  contexts?: Array<"nisa" | "income" | "micro" | "all">;
+  // バナー画像がある場合
+  bannerSrc?: string;
+  bannerWidth?: number;
+  bannerHeight?: number;
+  // トラッキングピクセル
+  pixelSrc?: string;
+}
+
+const ADS: AdItem[] = [
+  // ── NISA・株式系 ──────────────────────────
   {
+    id: "matui-ideco",
+    href: "https://px.a8.net/svt/ejp?a8mat=4B7QWW+9IYGI+3XCC+BXIYQ",
+    label: "松井証券ではじめるiDeCo",
+    description: "iDeCo・節税",
+    subtext: "老後資金を積立しながら節税。口座開設無料 →",
+    icon: "📈",
+    color: "blue",
+    contexts: ["income", "micro"],
+    pixelSrc: "https://www15.a8.net/0.gif?a8mat=4B7QWW+9IYGI+3XCC+BXIYQ",
+  },
+  {
+    id: "matui-stock",
+    href: "https://px.a8.net/svt/ejp?a8mat=4B7QWW+8XIUQ+3XCC+6HMHT",
+    label: "松井証券で株式・投資信託をはじめる",
+    description: "株式・投資信託・NISA",
+    subtext: "豊富な投資サービスを取り扱う老舗ネット証券 →",
+    icon: "📊",
+    color: "blue",
+    contexts: ["nisa"],
+    bannerSrc: "https://www27.a8.net/svt/bgt?aid=260701952015&wid=001&eno=01&mid=s00000018318001090000&mc=1",
+    bannerWidth: 300,
+    bannerHeight: 250,
+    pixelSrc: "https://www13.a8.net/0.gif?a8mat=4B7QWW+8XIUQ+3XCC+6HMHT",
+  },
+  {
+    id: "dmm-stock",
     href: "https://px.a8.net/svt/ejp?a8mat=4B650H+AO0LYQ+1WP2+15ORS2",
     label: "DMM株ではじめる！株式取引",
-    description: "株式取引・NISA口座開設",
+    description: "株式取引・NISA",
     subtext: "口座開設無料・手数料業界最安水準 →",
-    icon: "📈",
+    icon: "💹",
     color: "green",
+    contexts: ["nisa"],
+    pixelSrc: "https://www17.a8.net/0.gif?a8mat=4B650H+AO0LYQ+1WP2+15ORS2",
   },
-  // ↓ 承認されたらここに追加してください
-  // {
-  //   href: "https://YOUR_AFFILIATE_LINK_LOAN_HERE",
-  //   label: "住宅ローン金利を比較する",
-  //   description: "住宅ローン",
-  //   subtext: "変動・固定の最新金利をチェック →",
-  //   icon: "🏦",
-  //   color: "blue",
-  // },
-  // {
-  //   href: "https://YOUR_AFFILIATE_LINK_FP_HERE",
-  //   label: "無料FP相談をはじめる",
-  //   description: "無料FP相談",
-  //   subtext: "オンラインで何度でも無料 →",
-  //   icon: "💬",
-  //   color: "purple",
-  // },
+  // ── 保険・FP相談系 ─────────────────────────
+  {
+    id: "hoken-fp",
+    href: "https://px.a8.net/svt/ejp?a8mat=4B7QWW+19UECY+20NK+656YQ",
+    label: "無料FP相談｜みんなの生命保険アドバイザー",
+    description: "無料保険・FP相談",
+    subtext: "全国対応・在籍FP3000名以上。何度でも無料 →",
+    icon: "💬",
+    color: "purple",
+    contexts: ["income", "micro", "nisa"],
+    pixelSrc: "https://www12.a8.net/0.gif?a8mat=4B7QWW+19UECY+20NK+656YQ",
+  },
+  {
+    id: "fp-cafe",
+    href: "https://px.a8.net/svt/ejp?a8mat=4B7QWW+198YR6+5ULO+5Z6WX",
+    label: "FPカフェ｜無料で資産形成・保険相談",
+    description: "無料FP相談",
+    subtext: "資産形成や保険について気軽に相談 →",
+    icon: "☕",
+    color: "orange",
+    contexts: ["income", "micro"],
+    bannerSrc: "https://www22.a8.net/svt/bgt?aid=260701952076&wid=001&eno=01&mid=s00000027294001004000&mc=1",
+    bannerWidth: 120,
+    bannerHeight: 60,
+    pixelSrc: "https://www19.a8.net/0.gif?a8mat=4B7QWW+198YR6+5ULO+5Z6WX",
+  },
+  {
+    id: "oh-ya",
+    href: "https://px.a8.net/svt/ejp?a8mat=4B7QWW+JNBQQ+53AC+601S1",
+    label: "不動産投資一括面談【Oh!Ya】",
+    description: "不動産投資",
+    subtext: "資産形成に不動産投資を。60秒で簡単相談 →",
+    icon: "🏢",
+    color: "blue",
+    contexts: ["nisa", "micro"],
+    bannerSrc: "https://www24.a8.net/svt/bgt?aid=260701952033&wid=001&eno=01&mid=s00000023754001008000&mc=1",
+    bannerWidth: 468,
+    bannerHeight: 60,
+    pixelSrc: "https://www12.a8.net/0.gif?a8mat=4B7QWW+JNBQQ+53AC+601S1",
+  },
 ];
 
-const colorMap: Record<string, string> = {
-  blue:   "text-blue-500",
-  green:  "text-green-500",
-  purple: "text-purple-500",
-  orange: "text-brand-500",
+// ── カラーマップ ──────────────────────────────
+
+const colorMap = {
+  blue:   { text: "text-blue-500",   bg: "bg-blue-500" },
+  green:  { text: "text-green-500",  bg: "bg-green-500" },
+  purple: { text: "text-purple-500", bg: "bg-purple-500" },
+  orange: { text: "text-brand-500",  bg: "bg-brand-500" },
 };
 
-const bgMap: Record<string, string> = {
-  blue:   "bg-blue-500",
-  green:  "bg-green-500",
-  purple: "bg-purple-500",
-  orange: "bg-brand-500",
-};
+// ── コンテキスト型 ────────────────────────────
+
+type AdContext = "nisa" | "income" | "micro" | "all";
 
 interface AdSlotProps {
   slot: AdSlotType;
-  // 特定のスロットに特定の広告だけ表示したい場合はidsを指定
-  ids?: string[];
+  context?: AdContext;
 }
 
-export default function AdSlot({ slot }: AdSlotProps) {
-  // 広告が一件もなければ何も表示しない
-  if (AFFILIATE_LINKS.length === 0) return null;
+// ── メインコンポーネント ──────────────────────
 
-  // スロットによって表示する広告を絞ることもできます
-  // 今は全スロットで全広告を表示
-  const links = AFFILIATE_LINKS;
+export default function AdSlot({ slot: _slot, context = "all" }: AdSlotProps) {
+  // コンテキストに合う広告を絞り込み
+  const filtered = ADS.filter(ad =>
+    !ad.contexts || ad.contexts.includes(context) || ad.contexts.includes("all")
+  );
+
+  if (filtered.length === 0) return null;
 
   return (
     <section aria-label="おすすめサービス">
@@ -79,29 +151,55 @@ export default function AdSlot({ slot }: AdSlotProps) {
       </div>
 
       <div className="space-y-3">
-        {links.map((link, i) => (
-          <a
-            key={i}
-            href={link.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/60 dark:border-gray-700/60 shadow-sm p-4 active:opacity-70 transition-opacity"
-            aria-label={link.label}
-          >
-            <div className={`w-12 h-12 rounded-xl ${bgMap[link.color] ?? bgMap.green} flex items-center justify-center text-2xl flex-shrink-0`}>
-              {link.icon}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className={`text-xs ${colorMap[link.color] ?? colorMap.green} font-semibold mb-0.5`}>
-                {link.description}
-              </p>
-              <p className="text-sm font-semibold text-gray-900 dark:text-white leading-snug">
-                {link.label}
-              </p>
-              <p className="text-xs text-gray-400 mt-0.5">{link.subtext}</p>
-            </div>
-            <span className="text-gray-300 dark:text-gray-600 text-lg flex-shrink-0">›</span>
-          </a>
+        {filtered.map(ad => (
+          <div key={ad.id}>
+            {/* バナー広告がある場合はバナーを表示 */}
+            {ad.bannerSrc ? (
+              <a
+                href={ad.href}
+                target="_blank"
+                rel="nofollow noopener noreferrer"
+                aria-label={ad.label}
+                className="block rounded-2xl overflow-hidden active:opacity-70 transition-opacity"
+              >
+                <img
+                  border={0}
+                  width={ad.bannerWidth}
+                  height={ad.bannerHeight}
+                  alt={ad.label}
+                  src={ad.bannerSrc}
+                  className="w-full h-auto"
+                />
+              </a>
+            ) : (
+              /* テキストリンク */
+              <a
+                href={ad.href}
+                target="_blank"
+                rel="nofollow noopener noreferrer"
+                aria-label={ad.label}
+                className="flex items-center gap-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/60 dark:border-gray-700/60 shadow-sm p-4 active:opacity-70 transition-opacity"
+              >
+                <div className={`w-12 h-12 rounded-xl ${colorMap[ad.color].bg} flex items-center justify-center text-2xl flex-shrink-0`}>
+                  {ad.icon}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-xs ${colorMap[ad.color].text} font-semibold mb-0.5`}>
+                    {ad.description}
+                  </p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white leading-snug">
+                    {ad.label}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-0.5">{ad.subtext}</p>
+                </div>
+                <span className="text-gray-300 dark:text-gray-600 text-lg flex-shrink-0">›</span>
+              </a>
+            )}
+            {/* トラッキングピクセル */}
+            {ad.pixelSrc && (
+              <img border={0} width={1} height={1} src={ad.pixelSrc} alt="" />
+            )}
+          </div>
         ))}
       </div>
 

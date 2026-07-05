@@ -16,12 +16,15 @@ export interface KokuhoRate {
   kaigoKintou: number;   // 介護分 均等割（円/人）
   iryoHeitou: number;    // 医療分 平等割（円/世帯）
   shienHeitou: number;   // 支援金分 平等割（円/世帯）
+  kaigoHeitou?: number;  // 介護分 平等割（円/世帯）※ある自治体のみ
+  note?: string;         // 備考（内部調整など）
+  adjustmentLevel?: "low" | "medium" | "high"; // 内部調整の強さ
   iryoMax: number;       // 医療分 賦課限度額（円）
   shienMax: number;      // 支援金分 賦課限度額（円）
   kaigoMax: number;      // 介護分 賦課限度額（円）
 }
 
-/** 主要都市の国保料率（2024年度） */
+/** 主要都市の国保料率（2024-2026年度） */
 export const KOKUHO_RATES: KokuhoRate[] = [
   {
     city: "東京都（23区）", prefecture: "東京都",
@@ -29,6 +32,7 @@ export const KOKUHO_RATES: KokuhoRate[] = [
     iryoKintou: 47100, shienKintou: 14700, kaigoKintou: 17300,
     iryoHeitou: 0, shienHeitou: 0,
     iryoMax: 650000, shienMax: 240000, kaigoMax: 170000,
+    adjustmentLevel: "low",
   },
   {
     city: "横浜市", prefecture: "神奈川県",
@@ -36,6 +40,7 @@ export const KOKUHO_RATES: KokuhoRate[] = [
     iryoKintou: 33462, shienKintou: 10692, kaigoKintou: 14244,
     iryoHeitou: 0, shienHeitou: 0,
     iryoMax: 650000, shienMax: 240000, kaigoMax: 170000,
+    adjustmentLevel: "low",
   },
   {
     city: "大阪市", prefecture: "大阪府",
@@ -43,6 +48,8 @@ export const KOKUHO_RATES: KokuhoRate[] = [
     iryoKintou: 22410, shienKintou: 7320, kaigoKintou: 11220,
     iryoHeitou: 22140, shienHeitou: 6240,
     iryoMax: 650000, shienMax: 240000, kaigoMax: 170000,
+    adjustmentLevel: "medium",
+    note: "内部調整が入るため計算値と実際の通知額が異なる場合があります",
   },
   {
     city: "名古屋市", prefecture: "愛知県",
@@ -50,6 +57,7 @@ export const KOKUHO_RATES: KokuhoRate[] = [
     iryoKintou: 24450, shienKintou: 7650, kaigoKintou: 10800,
     iryoHeitou: 22800, shienHeitou: 7200,
     iryoMax: 650000, shienMax: 240000, kaigoMax: 170000,
+    adjustmentLevel: "low",
   },
   {
     city: "札幌市", prefecture: "北海道",
@@ -57,13 +65,17 @@ export const KOKUHO_RATES: KokuhoRate[] = [
     iryoKintou: 26640, shienKintou: 8520, kaigoKintou: 11520,
     iryoHeitou: 21600, shienHeitou: 6480,
     iryoMax: 650000, shienMax: 240000, kaigoMax: 170000,
+    adjustmentLevel: "medium",
+    note: "内部調整が入るため計算値と実際の通知額が異なる場合があります",
   },
   {
     city: "福岡市", prefecture: "福岡県",
-    iryoIncome: 0.0887, shienIncome: 0.0292, kaigo: 0.0228,
-    iryoKintou: 27816, shienKintou: 8856, kaigoKintou: 11472,
-    iryoHeitou: 26160, shienHeitou: 8280,
+    iryoIncome: 0.0887, shienIncome: 0.0292, kaigo: 0.0200,
+    iryoKintou: 33000, shienKintou: 11000, kaigoKintou: 12000,
+    iryoHeitou: 28000, shienHeitou: 10000, kaigoHeitou: 14000,
     iryoMax: 650000, shienMax: 240000, kaigoMax: 170000,
+    adjustmentLevel: "high",
+    note: "内部調整（按分・限度額調整）が強く、実際の通知額は計算値より低くなる場合があります",
   },
   {
     city: "仙台市", prefecture: "宮城県",
@@ -71,6 +83,8 @@ export const KOKUHO_RATES: KokuhoRate[] = [
     iryoKintou: 26400, shienKintou: 8400, kaigoKintou: 10800,
     iryoHeitou: 22800, shienHeitou: 7200,
     iryoMax: 650000, shienMax: 240000, kaigoMax: 170000,
+    adjustmentLevel: "medium",
+    note: "内部調整が入るため計算値と実際の通知額が異なる場合があります",
   },
   {
     city: "広島市", prefecture: "広島県",
@@ -78,6 +92,8 @@ export const KOKUHO_RATES: KokuhoRate[] = [
     iryoKintou: 26760, shienKintou: 8520, kaigoKintou: 11280,
     iryoHeitou: 23400, shienHeitou: 7440,
     iryoMax: 650000, shienMax: 240000, kaigoMax: 170000,
+    adjustmentLevel: "medium",
+    note: "内部調整が入るため計算値と実際の通知額が異なる場合があります",
   },
   {
     city: "京都市", prefecture: "京都府",
@@ -85,6 +101,8 @@ export const KOKUHO_RATES: KokuhoRate[] = [
     iryoKintou: 22680, shienKintou: 7272, kaigoKintou: 10560,
     iryoHeitou: 24120, shienHeitou: 7560,
     iryoMax: 650000, shienMax: 240000, kaigoMax: 170000,
+    adjustmentLevel: "medium",
+    note: "内部調整が入るため計算値と実際の通知額が異なる場合があります",
   },
   {
     city: "神戸市", prefecture: "兵庫県",
@@ -92,6 +110,7 @@ export const KOKUHO_RATES: KokuhoRate[] = [
     iryoKintou: 27900, shienKintou: 8520, kaigoKintou: 11160,
     iryoHeitou: 22200, shienHeitou: 6960,
     iryoMax: 650000, shienMax: 240000, kaigoMax: 170000,
+    adjustmentLevel: "low",
   },
 ];
 

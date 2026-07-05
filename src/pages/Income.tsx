@@ -17,7 +17,7 @@ import AdSlot from "@/components/AdSlot";
 import SimulatorGrid from "@/components/SimulatorGrid";
 
 import { useIncomeSimulator } from "@/hooks/useIncomeSimulator";
-import { KOKUHO_RATES } from "@/constants/kokuhoRates";
+import { KOKUHO_RATES, KOKUHO_MANUAL_DEFAULT } from "@/constants/kokuhoRates";
 import { useSimulatorStore } from "@/store/simulatorStore";
 import type { EmployeeInputs, FreelanceInputs, CalcStep } from "@/types/income";
 import type { BlueReturnType } from "@/constants/tax2026";
@@ -197,7 +197,24 @@ export default function Income() {
                 {KOKUHO_RATES.map(r => <option key={r.city} value={r.city}>{r.city}</option>)}
                 <option value="manual">その他（手動入力）</option>
               </select>
-              <p className="text-xs text-gray-400 mt-1">国保料率は自治体によって大きく異なります</p>
+              {(() => {
+                const selected = KOKUHO_RATES.find(r => r.city === frlInp.kokuhoCity);
+                const level = selected?.adjustmentLevel;
+                return (
+                  <>
+                    {level === "high" && (
+                      <p className="text-xs text-red-500 mt-1">⚠️ {selected?.note}</p>
+                    )}
+                    {level === "medium" && (
+                      <p className="text-xs text-amber-500 mt-1">⚠️ {selected?.note}</p>
+                    )}
+                    {level === "low" && (
+                      <p className="text-xs text-green-600 mt-1">✅ 計算値と通知額はほぼ一致する傾向があります</p>
+                    )}
+                  </>
+                );
+              })()}
+              <p className="text-xs text-gray-400 mt-1">計算値は理論値です。正確な金額は自治体の窓口または公式試算ページでご確認ください。</p>
             </div>
 
             {/* 手動入力エリア */}
@@ -364,7 +381,7 @@ export default function Income() {
           </Card>
         </section>
 
-        <AdSlot slot="result" />
+        <AdSlot slot="result" context="income" />
         <SimulatorGrid excludeId="income" />
 
         <p className="text-center text-xs text-gray-400 dark:text-gray-600 pb-4">

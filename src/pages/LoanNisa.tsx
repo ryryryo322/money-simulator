@@ -277,7 +277,7 @@ export default function LoanNisa() {
         </section>
 
         {/* 広告 */}
-        <AdSlot slot="result" />
+        <AdSlot slot="result" context="nisa" />
 
         {/* 他のシミュレーター */}
         <SimulatorGrid excludeId="loan-nisa" />

@@ -517,7 +517,7 @@ export default function MicroCorp() {
         </section>
 
         {/* 広告（結果下） */}
-        <AdSlot slot="result" />
+        <AdSlot slot="result" context="micro" />
 
         {/* ── FAQ ── */}
         <section>
@@ -530,13 +530,13 @@ export default function MicroCorp() {
         </section>
 
         {/* 広告（FAQ下） */}
-        <AdSlot slot="faq" />
+        <AdSlot slot="faq" context="micro" />
 
         {/* 他のシミュレーター */}
         <SimulatorGrid excludeId="microcorp" />
 
         {/* 広告（ページ最下部） */}
-        <AdSlot slot="footer" />
+        <AdSlot slot="footer" context="micro" />
 
         <p className="text-center text-xs text-gray-400 dark:text-gray-600 pb-4">
           ※概算です。自治体や加入保険等で変わります。税理士・社労士へ相談してください。
