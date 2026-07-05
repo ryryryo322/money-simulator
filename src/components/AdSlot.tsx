@@ -163,12 +163,11 @@ export default function AdSlot({ slot: _slot, context = "all" }: AdSlotProps) {
                 className="block rounded-2xl overflow-hidden active:opacity-70 transition-opacity"
               >
                 <img
-                  border={0}
                   width={ad.bannerWidth}
                   height={ad.bannerHeight}
                   alt={ad.label}
                   src={ad.bannerSrc}
-                  className="w-full h-auto"
+                  className="w-full h-auto border-0"
                 />
               </a>
             ) : (
@@ -197,7 +196,7 @@ export default function AdSlot({ slot: _slot, context = "all" }: AdSlotProps) {
             )}
             {/* トラッキングピクセル */}
             {ad.pixelSrc && (
-              <img border={0} width={1} height={1} src={ad.pixelSrc} alt="" />
+              <img width={1} height={1} src={ad.pixelSrc} alt="" className="border-0" />
             )}
           </div>
         ))}
