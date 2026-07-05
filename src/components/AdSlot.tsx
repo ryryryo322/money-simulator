@@ -24,10 +24,6 @@ interface AdItem {
   color: "blue" | "green" | "purple" | "orange";
   // どのコンテキストで表示するか（未指定は全ページ）
   contexts?: Array<"nisa" | "income" | "micro" | "all">;
-  // バナー画像がある場合
-  bannerSrc?: string;
-  bannerWidth?: number;
-  bannerHeight?: number;
   // トラッキングピクセル
   pixelSrc?: string;
 }
@@ -54,9 +50,6 @@ const ADS: AdItem[] = [
     icon: "📊",
     color: "blue",
     contexts: ["nisa"],
-    bannerSrc: "https://www27.a8.net/svt/bgt?aid=260701952015&wid=001&eno=01&mid=s00000018318001090000&mc=1",
-    bannerWidth: 300,
-    bannerHeight: 250,
     pixelSrc: "https://www13.a8.net/0.gif?a8mat=4B7QWW+8XIUQ+3XCC+6HMHT",
   },
   {
@@ -91,9 +84,6 @@ const ADS: AdItem[] = [
     icon: "☕",
     color: "orange",
     contexts: ["income", "micro"],
-    bannerSrc: "https://www22.a8.net/svt/bgt?aid=260701952076&wid=001&eno=01&mid=s00000027294001004000&mc=1",
-    bannerWidth: 120,
-    bannerHeight: 60,
     pixelSrc: "https://www19.a8.net/0.gif?a8mat=4B7QWW+198YR6+5ULO+5Z6WX",
   },
   {
@@ -105,9 +95,6 @@ const ADS: AdItem[] = [
     icon: "🏢",
     color: "blue",
     contexts: ["nisa", "micro"],
-    bannerSrc: "https://www24.a8.net/svt/bgt?aid=260701952033&wid=001&eno=01&mid=s00000023754001008000&mc=1",
-    bannerWidth: 468,
-    bannerHeight: 60,
     pixelSrc: "https://www12.a8.net/0.gif?a8mat=4B7QWW+JNBQQ+53AC+601S1",
   },
 ];
@@ -153,48 +140,28 @@ export default function AdSlot({ slot: _slot, context = "all" }: AdSlotProps) {
       <div className="space-y-3">
         {filtered.map(ad => (
           <div key={ad.id}>
-            {/* バナー広告がある場合はバナーを表示 */}
-            {ad.bannerSrc ? (
-              <a
-                href={ad.href}
-                target="_blank"
-                rel="nofollow noopener noreferrer"
-                aria-label={ad.label}
-                className="block rounded-2xl overflow-hidden active:opacity-70 transition-opacity"
-              >
-                <img
-                  width={ad.bannerWidth}
-                  height={ad.bannerHeight}
-                  alt={ad.label}
-                  src={ad.bannerSrc}
-                  className="w-full h-auto border-0"
-                />
-              </a>
-            ) : (
-              /* テキストリンク */
-              <a
-                href={ad.href}
-                target="_blank"
-                rel="nofollow noopener noreferrer"
-                aria-label={ad.label}
-                className="flex items-center gap-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/60 dark:border-gray-700/60 shadow-sm p-4 active:opacity-70 transition-opacity"
-              >
-                <div className={`w-12 h-12 rounded-xl ${colorMap[ad.color].bg} flex items-center justify-center text-2xl flex-shrink-0`}>
-                  {ad.icon}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className={`text-xs ${colorMap[ad.color].text} font-semibold mb-0.5`}>
-                    {ad.description}
-                  </p>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white leading-snug">
-                    {ad.label}
-                  </p>
-                  <p className="text-xs text-gray-400 mt-0.5">{ad.subtext}</p>
-                </div>
-                <span className="text-gray-300 dark:text-gray-600 text-lg flex-shrink-0">›</span>
-              </a>
-            )}
-            {/* トラッキングピクセル */}
+            <a
+              href={ad.href}
+              target="_blank"
+              rel="nofollow noopener noreferrer"
+              aria-label={ad.label}
+              className="flex items-center gap-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/60 dark:border-gray-700/60 shadow-sm p-4 active:opacity-70 transition-opacity"
+            >
+              <div className={`w-12 h-12 rounded-xl ${colorMap[ad.color].bg} flex items-center justify-center text-2xl flex-shrink-0`}>
+                {ad.icon}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className={`text-xs ${colorMap[ad.color].text} font-semibold mb-0.5`}>
+                  {ad.description}
+                </p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-white leading-snug">
+                  {ad.label}
+                </p>
+                <p className="text-xs text-gray-400 mt-0.5">{ad.subtext}</p>
+              </div>
+              <span className="text-gray-300 dark:text-gray-600 text-lg flex-shrink-0">›</span>
+            </a>
+            {/* トラッキングピクセル（A8.netの成果計測用） */}
             {ad.pixelSrc && (
               <img width={1} height={1} src={ad.pixelSrc} alt="" className="border-0" />
             )}
