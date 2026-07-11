@@ -175,7 +175,15 @@ export default function LoanNisa() {
         <section>
           <SectionTitle color="blue">📊 シミュレーション結果</SectionTitle>
           <Card>
-            <StatRow label="毎月返済額" value={`${Math.round(result.monthlyPayment).toLocaleString()}万円`} highlight />
+            {(() => {
+              const yen = Math.round(result.monthlyPayment * 10000);
+              const man = Math.floor(yen / 10000);
+              const rem = yen % 10000;
+              const display = man > 0
+                ? rem > 0 ? `${man.toLocaleString()}万${rem.toLocaleString()}円` : `${man.toLocaleString()}万円`
+                : `${yen.toLocaleString()}円`;
+              return <StatRow label="毎月返済額" value={display} highlight />;
+            })()}
             <StatRow label="総返済額" value={fmtM(result.totalPayment)} />
             <StatRow label="ローン完済年齢" value={`${result.completeAge}歳`} />
             <StatRow label={`NISA最終資産（${inp.retireAge}歳）`} value={fmtM(result.finalNisa)} highlight />
