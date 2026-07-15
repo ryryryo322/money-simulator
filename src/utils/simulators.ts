@@ -28,7 +28,7 @@ export const SIMULATORS: SimulatorInfo[] = [
     description: "控除上限額をかんたん計算",
     icon: "🧾",
     path: "/furusato",
-    available: false,
+    available: true,
   },
   {
     id: "microcorp",

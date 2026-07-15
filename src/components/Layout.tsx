@@ -1,20 +1,25 @@
 // ============================================
 // 共通レイアウト
 // 全シミュレーターで使うヘッダー・フッター付きのラッパー
+// ページ遷移時に自動でトップへスクロール
 // ============================================
 
 import { Link, useLocation } from "react-router-dom";
+import { useScrollTop } from "@/hooks/useScrollTop";
 import { SIMULATORS } from "@/utils/simulators";
 
 interface LayoutProps {
   children: React.ReactNode;
-  title: string;         // ページタイトル（ヘッダーに表示）
-  description?: string;  // ページの説明（SEO用meta descriptionに使用）
+  title: string;
+  description?: string;
 }
 
 export default function Layout({ children, title }: LayoutProps) {
   const location = useLocation();
   const isHome = location.pathname === "/";
+
+  // ページ遷移時に一番上へスクロール（入力内容はZustandで保持）
+  useScrollTop();
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 font-sans antialiased">
@@ -23,7 +28,6 @@ export default function Layout({ children, title }: LayoutProps) {
       <header className="sticky top-0 z-50 bg-white/70 dark:bg-gray-950/70 backdrop-blur-xl border-b border-gray-200/60 dark:border-gray-800/60">
         <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {/* トップ以外はバックボタンを表示 */}
             {!isHome && (
               <Link
                 to="/"
