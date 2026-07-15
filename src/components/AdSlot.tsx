@@ -143,7 +143,7 @@ const colorMap = {
 
 // ── コンテキスト型 ────────────────────────────
 
-type AdContext = "nisa" | "income" | "micro" | "all";
+type AdContext = "nisa" | "income" | "micro" | "furusato" | "all";
 
 interface AdSlotProps {
   slot: AdSlotType;
