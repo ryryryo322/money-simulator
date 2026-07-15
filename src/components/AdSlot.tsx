@@ -23,7 +23,7 @@ interface AdItem {
   icon: string;
   color: "blue" | "green" | "purple" | "orange";
   // どのコンテキストで表示するか（未指定は全ページ）
-  contexts?: Array<"nisa" | "income" | "micro" | "all">;
+  contexts?: Array<"nisa" | "income" | "micro" | "furusato" | "all">;
   // トラッキングピクセル
   pixelSrc?: string;
 }
