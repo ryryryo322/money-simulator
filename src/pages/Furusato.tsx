@@ -348,24 +348,54 @@ export default function Furusato() {
         <section>
           <SectionTitle color="green">🛒 ふるさと納税サイト</SectionTitle>
           <div className="space-y-3">
-            {[
-              { name: "さとふる", desc: "最短翌日発送・使いやすいUI", icon: "🍊", color: "bg-orange-500" },
-              { name: "ふるなび", desc: "Amazonギフト券などの還元あり", icon: "🎁", color: "bg-red-500" },
-              { name: "楽天ふるさと納税", desc: "楽天ポイントが貯まる・使える", icon: "🛍️", color: "bg-red-600" },
-            ].map(s => (
-              <div key={s.name} className="flex items-center gap-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/60 dark:border-gray-700/60 shadow-sm p-4">
-                <div className={`w-12 h-12 rounded-xl ${s.color} flex items-center justify-center text-2xl flex-shrink-0`}>
-                  {s.icon}
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{s.name}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{s.desc}</p>
-                </div>
-                <span className="text-xs text-brand-500 font-medium">近日リンク追加予定</span>
+
+            {/* ふるさと本舗 */}
+            <a href="https://px.a8.net/svt/ejp?a8mat=4B8113+E4G7EA+5IMU+5YRHE"
+              target="_blank" rel="nofollow noopener noreferrer"
+              className="flex items-center gap-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/60 dark:border-gray-700/60 shadow-sm p-4 active:opacity-70 transition-opacity"
+            >
+              <div className="w-12 h-12 rounded-xl bg-orange-500 flex items-center justify-center text-2xl flex-shrink-0">🏯</div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-orange-500 font-semibold mb-0.5">ふるさと納税</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">ふるさと本舗</p>
+                <p className="text-xs text-gray-400 mt-0.5">全国の美味しい特産品に特化したふるさと納税サイト →</p>
               </div>
-            ))}
+              <span className="text-gray-300 dark:text-gray-600 text-lg flex-shrink-0">›</span>
+            </a>
+            <img width={1} height={1} src="https://www15.a8.net/0.gif?a8mat=4B8113+E4G7EA+5IMU+5YRHE" alt="" className="border-0" />
+
+            {/* au PAY ふるさと納税 */}
+            <a href="https://px.a8.net/svt/ejp?a8mat=4B8113+E22GZ6+54OC+5YRHE"
+              target="_blank" rel="nofollow noopener noreferrer"
+              className="flex items-center gap-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/60 dark:border-gray-700/60 shadow-sm p-4 active:opacity-70 transition-opacity"
+            >
+              <div className="w-12 h-12 rounded-xl bg-brand-500 flex items-center justify-center text-2xl flex-shrink-0">📱</div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-brand-500 font-semibold mb-0.5">ふるさと納税</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">au PAY ふるさと納税</p>
+                <p className="text-xs text-gray-400 mt-0.5">貯まったPontaポイントで寄附できる →</p>
+              </div>
+              <span className="text-gray-300 dark:text-gray-600 text-lg flex-shrink-0">›</span>
+            </a>
+            <img width={1} height={1} src="https://www11.a8.net/0.gif?a8mat=4B8113+E22GZ6+54OC+5YRHE" alt="" className="border-0" />
+
+            {/* ウイスキーふるさと納税 */}
+            <a href="https://px.a8.net/svt/ejp?a8mat=4B8113+E3URSI+5U6O+BX3J6"
+              target="_blank" rel="nofollow noopener noreferrer"
+              className="flex items-center gap-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-white/60 dark:border-gray-700/60 shadow-sm p-4 active:opacity-70 transition-opacity"
+            >
+              <div className="w-12 h-12 rounded-xl bg-amber-700 flex items-center justify-center text-2xl flex-shrink-0">🥃</div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-amber-700 font-semibold mb-0.5">ふるさと納税</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">ウイスキーふるさと納税</p>
+                <p className="text-xs text-gray-400 mt-0.5">投資家・富裕層に人気。希少ウイスキーをふるさと納税で →</p>
+              </div>
+              <span className="text-gray-300 dark:text-gray-600 text-lg flex-shrink-0">›</span>
+            </a>
+            <img width={1} height={1} src="https://www10.a8.net/0.gif?a8mat=4B8113+E3URSI+5U6O+BX3J6" alt="" className="border-0" />
+
           </div>
-          <p className="text-xs text-gray-400 mt-2 px-1">※アフィリエイト提携次第でリンクを追加します</p>
+          <p className="text-xs text-gray-400 mt-2 px-1">※ 広告・PR を含みます</p>
         </section>
 
         {/* SEO解説 */}
