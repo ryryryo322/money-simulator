@@ -23,7 +23,7 @@ interface AdItem {
   icon: string;
   color: "blue" | "green" | "purple" | "orange";
   // どのコンテキストで表示するか（未指定は全ページ）
-  contexts?: Array<"nisa" | "income" | "micro" | "furusato" | "all">;
+  contexts?: Array<"nisa" | "income" | "micro" | "furusato" | "ideco" | "kokuho" | "all">;
   // トラッキングピクセル
   pixelSrc?: string;
 }
@@ -143,7 +143,7 @@ const colorMap = {
 
 // ── コンテキスト型 ────────────────────────────
 
-type AdContext = "nisa" | "income" | "micro" | "furusato" | "all";
+type AdContext = "nisa" | "income" | "micro" | "furusato" | "ideco" | "kokuho" | "all";
 
 interface AdSlotProps {
   slot: AdSlotType;

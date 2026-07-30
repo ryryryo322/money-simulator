@@ -8,7 +8,8 @@ import LoanNisa from "./pages/LoanNisa";
 import Income from "./pages/Income";
 import MicroCorp from "./pages/MicroCorp";
 import Furusato from "./pages/Furusato";
-// 新しいシミュレーターはここに追加
+import Ideco from "./pages/Ideco";
+import Kokuho from "./pages/Kokuho";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -19,6 +20,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <Route path="/income" element={<Income />} />
         <Route path="/micro-corp" element={<MicroCorp />} />
         <Route path="/furusato" element={<Furusato />} />
+        <Route path="/ideco" element={<Ideco />} />
+        <Route path="/kokuho" element={<Kokuho />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>
