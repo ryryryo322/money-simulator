@@ -10,6 +10,7 @@ import MicroCorp from "./pages/MicroCorp";
 import Furusato from "./pages/Furusato";
 import Ideco from "./pages/Ideco";
 import Kokuho from "./pages/Kokuho";
+import Ikukyu from "./pages/Ikukyu";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -22,6 +23,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <Route path="/furusato" element={<Furusato />} />
         <Route path="/ideco" element={<Ideco />} />
         <Route path="/kokuho" element={<Kokuho />} />
+        <Route path="/ikukyu" element={<Ikukyu />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>
