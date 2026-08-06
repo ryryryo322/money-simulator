@@ -8,6 +8,33 @@ import { create } from "zustand";
 import type { EmployeeInputs, FreelanceInputs } from "@/types/income";
 import type { SoloInputs, CorpInputs } from "@/types/microCorp";
 
+// ============================================
+// 共通プロフィール
+// トップページで一度入力すると全ページに反映
+// ============================================
+
+export type WorkType = "employee" | "freelance";
+
+export interface UserProfile {
+  workType: WorkType;       // 職業
+  income: number;           // 年収・売上（万円）
+  expense: number;          // 経費（個人事業主のみ、万円）
+  age: number;              // 年齢
+  dependents: number;       // 扶養人数
+  hasSpouse: boolean;       // 配偶者あり
+  kokuhoCity: string;       // 居住自治体（国保計算用）
+}
+
+const profileInitial: UserProfile = {
+  workType: "employee",
+  income: 500,
+  expense: 100,
+  age: 35,
+  dependents: 0,
+  hasSpouse: false,
+  kokuhoCity: "東京都（23区）",
+};
+
 // ── LoanNisa の初期値 ─────────────────────────
 
 interface LoanNisaState {
@@ -71,6 +98,12 @@ const microCorpInitial: MicroCorpState = {
 // ── ストア定義 ───────────────────────────────
 
 interface SimulatorStore {
+  // 共通プロフィール
+  profile: UserProfile;
+  setProfile: <K extends keyof UserProfile>(key: K, value: UserProfile[K]) => void;
+  // プロフィールを全ページに一括反映
+  applyProfile: () => void;
+
   // LoanNisa
   loanNisa: LoanNisaState;
   setLoanNisa: (key: keyof LoanNisaState, value: number) => void;
@@ -86,7 +119,55 @@ interface SimulatorStore {
   setCorpInp: <K extends keyof CorpInputs>(key: K, value: CorpInputs[K]) => void;
 }
 
-export const useSimulatorStore = create<SimulatorStore>((set) => ({
+export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
+  // ── 共通プロフィール ──
+  profile: profileInitial,
+  setProfile: (key, value) =>
+    set(s => ({ profile: { ...s.profile, [key]: value } })),
+
+  // プロフィールの内容を全シミュレーターに一括反映
+  applyProfile: () => {
+    const { profile } = get();
+    set(s => ({
+      // LoanNisa
+      loanNisa: {
+        ...s.loanNisa,
+        currentAge: profile.age,
+        income: profile.workType === "employee" ? profile.income : profile.income - profile.expense,
+      },
+      // Income（会社員）
+      income: {
+        empInp: {
+          ...s.income.empInp,
+          income: profile.income,
+          dependents: profile.dependents,
+          hasSpouse: profile.hasSpouse,
+        },
+        frlInp: {
+          ...s.income.frlInp,
+          revenue: profile.income,
+          expense: profile.expense,
+          dependents: profile.dependents,
+          hasSpouse: profile.hasSpouse,
+          age: profile.age,
+          kokuhoCity: profile.kokuhoCity,
+        },
+      },
+      // MicroCorp
+      microCorp: {
+        ...s.microCorp,
+        soloInp: {
+          ...s.microCorp.soloInp,
+          revenue: profile.income,
+          expense: profile.expense,
+          age: profile.age,
+          dependents: profile.dependents,
+          hasSpouse: profile.hasSpouse,
+        },
+      },
+    }));
+  },
+
   // ── LoanNisa ──
   loanNisa: loanNisaInitial,
   setLoanNisa: (key, value) =>
