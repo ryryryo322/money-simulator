@@ -4,6 +4,7 @@
 // ============================================
 
 import { useState, useMemo } from "react";
+import { Link } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Card, SectionTitle, SliderInput, StatRow } from "@/components/ui";
 import AdSlot from "@/components/AdSlot";
@@ -297,6 +298,21 @@ export default function Kokuho() {
 
         {/* 広告 */}
         <AdSlot slot="result" context="kokuho" />
+
+        {/* 東京都ユーザーへの誘導 */}
+        <section>
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-4 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs text-blue-500 font-semibold mb-0.5">🗼 東京都にお住まいの方へ</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">東京23区の国保料を区ごとに正確に計算</p>
+              <p className="text-xs text-gray-500 mt-0.5">2026年度公式データ対応・子ども支援金含む</p>
+            </div>
+            <Link to="/tokyo-kokuho"
+              className="flex-shrink-0 bg-blue-500 text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-blue-600 active:opacity-70 transition-colors">
+              計算する →
+            </Link>
+          </div>
+        </section>
 
         {/* SEO解説 */}
         <section>

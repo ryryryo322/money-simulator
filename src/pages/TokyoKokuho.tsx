@@ -564,6 +564,19 @@ export default function TokyoKokuho() {
             </div>
           </section>
 
+          {/* 全国版への誘導 */}
+          <div className="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl p-4 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs text-gray-500 font-semibold mb-0.5">🗾 東京以外の方・全国対応版</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">全国向け 国民健康保険シミュレーター</p>
+              <p className="text-xs text-gray-500 mt-0.5">主要10都市の国保料を計算・手動入力にも対応</p>
+            </div>
+            <Link to="/kokuho"
+              className="flex-shrink-0 bg-gray-700 text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-gray-600 active:opacity-70 transition-colors">
+              こちら →
+            </Link>
+          </div>
+
           <p className="text-center text-xs text-gray-400 dark:text-gray-600 pb-4">
             出典：東京都保健医療局「令和8年度 特別区国民健康保険料一覧表」（令和8年4月1日現在）<br />
             ※料率は制度改正により変更される場合があります。正確な金額は区の窓口でご確認ください。
