@@ -7,7 +7,7 @@ import { useMemo } from "react";
 import {
   calcIncomeTax, calcResidentTax, calcKyuyoDeduction,
   calcIncomeDeductions, calcBizTax,
-  BASIC_DEDUCTION_YEN,/**/ 
+  BASIC_DEDUCTION_YEN,
 } from "@/lib/tax";
 import { calcKokunen, calcEmployeeSocialInsurance } from "@/lib/insurance";
 import { calcKokuhoAccurate } from "@/lib/insurance/kokuho";
