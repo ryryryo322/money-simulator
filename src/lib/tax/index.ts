@@ -106,6 +106,22 @@ export function calcIncomeTax(taxableIncomeYen: number): number {
 }
 
 /**
+ * 所得税の限界税率（税率表の該当区分の税率）を返します
+ *
+ * @param taxableIncomeYen 課税所得（円）
+ * @returns 税率（例: 0.20）。復興特別所得税は含みません。
+ *
+ * @remarks iDeCo・ふるさと納税など、税率だけが必要な計算で共通利用します。
+ */
+export function getMarginalIncomeTaxRate(taxableIncomeYen: number): number {
+  const income = safeNum(taxableIncomeYen);
+  for (const b of INCOME_TAX_BRACKETS) {
+    if (income <= b.max) return b.rate;
+  }
+  return 0.45;
+}
+
+/**
  * 住民税を計算します
  *
  * @param taxableIncomeYen 課税所得（円）

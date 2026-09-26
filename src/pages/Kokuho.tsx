@@ -9,10 +9,12 @@ import Layout from "@/components/Layout";
 import { Card, SectionTitle, SliderInput, StatRow } from "@/components/ui";
 import AdSlot from "@/components/AdSlot";
 import SimulatorGrid from "@/components/SimulatorGrid";
-import { KOKUHO_RATES, KOKUHO_MANUAL_DEFAULT } from "@/constants/kokuhoRates";
-import type { KokuhoRate } from "@/constants/kokuhoRates";
+import { KOKUHO_RATES } from "@/constants/kokuhoRates";
+import { calcKokuhoAccurate, resolveKokuhoRate } from "@/lib/insurance/kokuho";
 
 // ── 計算ロジック ─────────────────────────────
+// 国保の計算本体は lib/insurance/kokuho.ts（calcKokuhoAccurate）に一本化しています。
+// このページでは「万円入力 ⇔ 円計算」の変換のみを行います。
 
 interface KokuhoInputs {
   income: number;        // 総所得（万円）青色控除後
@@ -41,71 +43,21 @@ interface KokuhoResult {
 }
 
 function calcKokuho(inp: KokuhoInputs): KokuhoResult {
-  const { income, age, members } = inp;
-  const incomeYen = income * 10000;
-
-  const rate: KokuhoRate = inp.kokuhoCity === "manual"
-    ? {
-        ...KOKUHO_MANUAL_DEFAULT,
-        iryoIncome: inp.manualIryoRate / 100,
-        shienIncome: inp.manualShienRate / 100,
-        kaigo: inp.manualKaigoRate / 100,
-        iryoKintou: inp.manualIryoKintou,
-        shienKintou: inp.manualShienKintou,
-        kaigoKintou: inp.manualKaigoKintou,
-        iryoHeitou: inp.manualHeitou,
-        shienHeitou: 0,
-      }
-    : KOKUHO_RATES.find(r => r.city === inp.kokuhoCity) ?? KOKUHO_RATES[0];
-
-  // 所得割基準（総所得-43万）
-  const shotokuBaseYen = Math.max(0, incomeYen - 430_000);
-
-  // 軽減判定
-  const m = Math.max(1, members);
-  const kigen7 = 430_000;
-  const kigen5 = 430_000 + 290_000 * m;
-  const kigen2 = 430_000 + 535_000 * m;
-
-  let kintoRate: number;
-  let kintoLabel: string;
-  if (incomeYen <= kigen7) { kintoRate = 0.3; kintoLabel = "7割軽減"; }
-  else if (incomeYen <= kigen5) { kintoRate = 0.5; kintoLabel = "5割軽減"; }
-  else if (incomeYen <= kigen2) { kintoRate = 0.8; kintoLabel = "2割軽減"; }
-  else { kintoRate = 1.0; kintoLabel = "軽減なし"; }
-
-  // 医療分
-  const iryoYen = Math.min(
-    shotokuBaseYen * rate.iryoIncome + rate.iryoKintou * m * kintoRate + rate.iryoHeitou * kintoRate,
-    rate.iryoMax
-  );
-
-  // 支援金分
-  const shienYen = Math.min(
-    shotokuBaseYen * rate.shienIncome + rate.shienKintou * m * kintoRate + rate.shienHeitou * kintoRate,
-    rate.shienMax
-  );
-
-  // 介護分（40〜64歳のみ）
-  let kaigoYen = 0;
-  if (age >= 40 && age <= 64) {
-    const kaigoHeitou = (rate.kaigoHeitou ?? 0) * kintoRate;
-    kaigoYen = Math.min(
-      shotokuBaseYen * rate.kaigo + rate.kaigoKintou * m * kintoRate + kaigoHeitou,
-      rate.kaigoMax
-    );
-  }
-
-  const totalYen = Math.round(iryoYen + shienYen + kaigoYen);
+  const r = calcKokuhoAccurate({
+    totalIncomeYen: inp.income * 10000,
+    members: inp.members,
+    age: inp.age,
+    rate: resolveKokuhoRate(inp.kokuhoCity, inp),
+  });
   return {
-    shotokuBase: Math.round(shotokuBaseYen / 10000 * 10) / 10,
-    kintoRate,
-    kintoLabel,
-    iryoYen: Math.round(iryoYen),
-    shienYen: Math.round(shienYen),
-    kaigoYen: Math.round(kaigoYen),
-    totalYen,
-    totalMan: Math.round(totalYen / 10000 * 10) / 10,
+    shotokuBase: Math.round(r.shotokuBaseYen / 10000 * 10) / 10,
+    kintoRate: r.kintoRate,
+    kintoLabel: r.kintoLabel,
+    iryoYen: r.iryoYen,
+    shienYen: r.shienYen,
+    kaigoYen: r.kaigoYen,
+    totalYen: r.totalYen,
+    totalMan: Math.round(r.totalYen / 10000 * 10) / 10,
   };
 }
 

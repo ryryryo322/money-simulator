@@ -9,6 +9,9 @@ import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Card, SectionTitle, SliderInput } from "@/components/ui";
+import { calcKyuyoDeduction as calcKyuyoDeductionYen } from "@/lib/tax";
+import { manToYen, yenToMan } from "@/lib/formatter";
+import { getKintoInfo, KOKUHO_SHOTOKU_KOJO_YEN } from "@/lib/insurance/kokuho";
 
 // ── 2026年度 東京23区 料率データ ──────────────
 // 出典：東京都保健医療局（令和8年4月1日現在）
@@ -85,14 +88,9 @@ interface TokyoKokuhoResult {
   isOver: boolean;       // 限度額到達
 }
 
-// 給与所得控除
+// 給与所得控除（万円）※計算は lib/tax の共通ロジックを利用
 function kyuyoDeduction(income: number): number {
-  if (income <= 162.5) return 55;
-  if (income <= 180) return income * 0.4 - 10;
-  if (income <= 360) return income * 0.3 + 8;
-  if (income <= 660) return income * 0.2 + 44;
-  if (income <= 850) return income * 0.1 + 110;
-  return 195;
+  return yenToMan(calcKyuyoDeductionYen(manToYen(income)));
 }
 
 function calcTokyoKokuho(inp: TokyoKokuhoInputs): TokyoKokuhoResult {
@@ -108,18 +106,10 @@ function calcTokyoKokuho(inp: TokyoKokuhoInputs): TokyoKokuhoResult {
     totalIncomeMan = Math.max(0, inp.businessIncome);
   }
   const totalIncomeYen = totalIncomeMan * 10000;
-  const shotokuBaseYen = Math.max(0, totalIncomeYen - 430_000);
+  const shotokuBaseYen = Math.max(0, totalIncomeYen - KOKUHO_SHOTOKU_KOJO_YEN);
 
-  // 軽減判定
-  const kigen7 = 430_000;
-  const kigen5 = 430_000 + 290_000 * m;
-  const kigen2 = 430_000 + 535_000 * m;
-  let kintoRate: number;
-  let kintoLabel: string;
-  if (totalIncomeYen <= kigen7) { kintoRate = 0.3; kintoLabel = "7割軽減"; }
-  else if (totalIncomeYen <= kigen5) { kintoRate = 0.5; kintoLabel = "5割軽減"; }
-  else if (totalIncomeYen <= kigen2) { kintoRate = 0.8; kintoLabel = "2割軽減"; }
-  else { kintoRate = 1.0; kintoLabel = "軽減なし"; }
+  // 軽減判定（lib/insurance/kokuho の共通ロジック）
+  const { kintoRate, kintoLabel } = getKintoInfo(totalIncomeYen, m);
 
   // 基礎賦課分（医療分）
   const iryoRaw = shotokuBaseYen * ward.iryoIncome + ward.iryoKintou * m * kintoRate;
@@ -166,7 +156,7 @@ function calcExamples(ward: Ward, age: number) {
   return INCOME_EXAMPLES.map(inc => {
     const deduction = kyuyoDeduction(inc);
     const soIncome = Math.max(0, inc - deduction);
-    const base = Math.max(0, soIncome * 10000 - 430_000);
+    const base = Math.max(0, soIncome * 10000 - KOKUHO_SHOTOKU_KOJO_YEN);
     const iryo = Math.min(base * ward.iryoIncome + ward.iryoKintou, ward.iryoMax);
     const shien = Math.min(base * ward.shienIncome + ward.shienKintou, ward.shienMax);
     const kaigo = age >= 40 && age <= 64

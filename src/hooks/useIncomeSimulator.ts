@@ -10,14 +10,9 @@ import {
   BASIC_DEDUCTION_YEN,
 } from "@/lib/tax";
 import { calcKokunen, calcEmployeeSocialInsurance } from "@/lib/insurance";
-import { calcKokuhoAccurate } from "@/lib/insurance/kokuho";
+import { calcKokuhoAccurate, resolveKokuhoRate } from "@/lib/insurance/kokuho";
 import { roundYen, manToYen, yenToMan } from "@/lib/formatter";
-import {
-  BLUE_RETURN_OPTIONS,
-  RESIDENT_TAX_INCOME_RATE,
-  RESIDENT_TAX_FLAT,
-} from "@/constants/tax2026";
-import { KOKUHO_RATES, KOKUHO_MANUAL_DEFAULT } from "@/constants/kokuhoRates";
+import { BLUE_RETURN_OPTIONS } from "@/constants/tax2026";
 import type { EmployeeInputs, FreelanceInputs, EmployeeResult, FreelanceResult, CalcStep } from "@/types/income";
 
 // ── 会社員の計算 ─────────────────────────────
@@ -68,20 +63,8 @@ function computeFreelance(inp: FreelanceInputs): FreelanceResult {
   const idecoYen = roundYen(manToYen(inp.ideco) * 12);
   const bizTaxYen = calcBizTax(afterBlueYen, inp.hasBizTax);
 
-  // 自治体別国保計算
-  const kokuhoRate = inp.kokuhoCity === "manual"
-    ? {
-        ...KOKUHO_MANUAL_DEFAULT,
-        iryoIncome: inp.manualIryoRate / 100,
-        shienIncome: inp.manualShienRate / 100,
-        kaigo: inp.manualKaigoRate / 100,
-        iryoKintou: inp.manualIryoKintou,
-        shienKintou: inp.manualShienKintou,
-        kaigoKintou: inp.manualKaigoKintou,
-        iryoHeitou: inp.manualHeitou,
-        shienHeitou: 0,
-      }
-    : KOKUHO_RATES.find(r => r.city === inp.kokuhoCity) ?? KOKUHO_RATES[0];
+  // 自治体別国保計算（料率の解決は lib/insurance/kokuho.ts に一本化）
+  const kokuhoRate = resolveKokuhoRate(inp.kokuhoCity, inp);
 
   const kokuhoResult = calcKokuhoAccurate({
     totalIncomeYen: afterBlueYen,  // 青色控除後の事業所得を使用
@@ -107,7 +90,7 @@ function computeFreelance(inp: FreelanceInputs): FreelanceResult {
 
   const taxableIncomeYen = Math.max(0, afterBlueYen - totalDeductionsYen);
   const incomeTaxYen = calcIncomeTax(taxableIncomeYen);
-  const residentTaxYen = roundYen(taxableIncomeYen * RESIDENT_TAX_INCOME_RATE + RESIDENT_TAX_FLAT);
+  const residentTaxYen = calcResidentTax(taxableIncomeYen);
   const totalBurdenYen = roundYen(incomeTaxYen + residentTaxYen + kokuhoYen + kokunenYen + bizTaxYen + consumptionTaxYen);
   const takeHomeYen = roundYen(businessIncomeYen - totalBurdenYen);
 

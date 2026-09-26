@@ -8,28 +8,20 @@ import Layout from "@/components/Layout";
 import { Card, SectionTitle, SliderInput, StatRow } from "@/components/ui";
 import AdSlot from "@/components/AdSlot";
 import SimulatorGrid from "@/components/SimulatorGrid";
+import { calcKyuyoDeduction as calcKyuyoDeductionYen, getMarginalIncomeTaxRate } from "@/lib/tax";
+import { manToYen, yenToMan } from "@/lib/formatter";
 
 // ── 定数 ─────────────────────────────────────
+// 税率表・給与所得控除は lib/tax の共通ロジックを利用します（このページの単位は万円）
 
-/** 給与所得控除テーブル */
+/** 給与所得控除テーブル（万円） */
 function calcKyuyoDeduction(income: number): number {
-  if (income <= 162.5) return 55;
-  if (income <= 180) return income * 0.4 - 10;
-  if (income <= 360) return income * 0.3 + 8;
-  if (income <= 660) return income * 0.2 + 44;
-  if (income <= 850) return income * 0.1 + 110;
-  return 195;
+  return yenToMan(calcKyuyoDeductionYen(manToYen(income)));
 }
 
-/** 所得税率テーブル */
+/** 所得税率（課税所得：万円） */
 function calcIncomeTaxRate(taxableIncome: number): number {
-  if (taxableIncome <= 195) return 0.05;
-  if (taxableIncome <= 330) return 0.10;
-  if (taxableIncome <= 695) return 0.20;
-  if (taxableIncome <= 900) return 0.23;
-  if (taxableIncome <= 1800) return 0.33;
-  if (taxableIncome <= 4000) return 0.40;
-  return 0.45;
+  return getMarginalIncomeTaxRate(manToYen(taxableIncome));
 }
 
 // ── 計算ロジック ─────────────────────────────
