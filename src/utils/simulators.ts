@@ -7,6 +7,7 @@ export const SIMULATORS: SimulatorInfo[] = [
   { id: "ideco", title: "iDeCoシミュレーター", description: "節税額と将来資産をシミュレーション", icon: "📈", path: "/ideco", available: true },
   { id: "kokuho", title: "国民健康保険シミュレーター", description: "自治体別の国保料をかんたん計算", icon: "💴", path: "/kokuho", available: true },
   { id: "tokyo-kokuho", title: "東京都 国保料シミュレーター", description: "東京23区・2026年度の国保料を区ごとに計算", icon: "🗼", path: "/tokyo-kokuho", available: true },
+  { id: "usd-jpy-simulation", title: "ドル円積立シミュレーター", description: "実際の為替レートでドル積立の実績をシミュレーション", icon: "💵", path: "/usd-jpy-simulation", available: true },
   { id: "ikukyu", title: "育休手当シミュレーター", description: "育休中の給付金をシミュレーション", icon: "👶", path: "/ikukyu", available: true },
   { id: "refinance", title: "住宅ローン借り換えシミュレーター", description: "借り換えによる節約額をシミュレーション", icon: "🏡", path: "/refinance", available: false },
   { id: "fire", title: "FIREシミュレーター", description: "経済的自立の達成時期をシミュレーション", icon: "💸", path: "/fire", available: false },
