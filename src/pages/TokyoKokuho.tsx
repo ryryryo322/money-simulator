@@ -12,6 +12,8 @@ import { Card, SectionTitle, SliderInput } from "@/components/ui";
 import { calcKyuyoDeduction as calcKyuyoDeductionYen } from "@/lib/tax";
 import { manToYen, yenToMan } from "@/lib/formatter";
 import { getKintoInfo, KOKUHO_SHOTOKU_KOJO_YEN } from "@/lib/insurance/kokuho";
+import { useSimulatorStore } from "@/store/simulatorStore";
+import type { TokyoKokuhoInputs } from "@/types/tokyoKokuho";
 
 // ── 2026年度 東京23区 料率データ ──────────────
 // 出典：東京都保健医療局（令和8年4月1日現在）
@@ -66,15 +68,6 @@ const WARDS: Ward[] = [
 ];
 
 // ── 計算ロジック ─────────────────────────────
-
-interface TokyoKokuhoInputs {
-  ward: string;          // 区
-  incomeType: "employee" | "freelance";
-  annualIncome: number;  // 年収（会社員）万円
-  businessIncome: number;// 事業所得（個人事業主）万円
-  age: number;
-  members: number;       // 世帯の国保加入人数
-}
 
 interface TokyoKokuhoResult {
   shotokuBase: number;   // 所得割計算基準（円）
@@ -209,17 +202,9 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 // ── メインコンポーネント ──────────────────────
 
 export default function TokyoKokuho() {
-  const [inp, setInp] = useState<TokyoKokuhoInputs>({
-    ward: "新宿区",
-    incomeType: "employee",
-    annualIncome: 500,
-    businessIncome: 400,
-    age: 35,
-    members: 1,
-  });
-
-  const set = <K extends keyof TokyoKokuhoInputs>(key: K, val: TokyoKokuhoInputs[K]) =>
-    setInp(prev => ({ ...prev, [key]: val }));
+  // Zustandストアから状態を取得（ページ移動しても値が保持される／ホームの一括反映にも対応）
+  const { tokyoKokuho: inp, setTokyoKokuhoInp } = useSimulatorStore();
+  const set = setTokyoKokuhoInp;
 
   const result = useMemo(() => calcTokyoKokuho(inp), [inp]);
   const selectedWard = WARDS.find(w => w.name === inp.ward) ?? WARDS[3];

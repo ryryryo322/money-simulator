@@ -12,38 +12,35 @@ import Layout from "@/components/Layout";
 import { Card, SectionTitle, SliderInput, StatRow } from "@/components/ui";
 import AdSlot from "@/components/AdSlot";
 import SimulatorGrid from "@/components/SimulatorGrid";
-import { calcKyuyoDeduction as calcKyuyoDeductionYen, getMarginalIncomeTaxRate } from "@/lib/tax";
-import { manToYen, yenToMan } from "@/lib/formatter";
+import { useSimulatorStore } from "@/store/simulatorStore";
+import type { IdecoInputs } from "@/types/ideco";
 
 // ── 定数 ─────────────────────────────────────
-// 税率表・給与所得控除は lib/tax の共通ロジックを利用します（このページの単位は万円）
 
-/** 所得税率（課税所得：万円） */
+/** 所得税率テーブル */
 function getIncomeTaxRate(taxableIncome: number): number {
-  return getMarginalIncomeTaxRate(manToYen(taxableIncome));
+  if (taxableIncome <= 195) return 0.05;
+  if (taxableIncome <= 330) return 0.10;
+  if (taxableIncome <= 695) return 0.20;
+  if (taxableIncome <= 900) return 0.23;
+  if (taxableIncome <= 1800) return 0.33;
+  if (taxableIncome <= 4000) return 0.40;
+  return 0.45;
 }
 
-/** 給与所得控除（万円） */
+/** 給与所得控除 */
 function calcKyuyoDeduction(income: number): number {
-  return yenToMan(calcKyuyoDeductionYen(manToYen(income)));
+  if (income <= 162.5) return 55;
+  if (income <= 180) return income * 0.4 - 10;
+  if (income <= 360) return income * 0.3 + 8;
+  if (income <= 660) return income * 0.2 + 44;
+  if (income <= 850) return income * 0.1 + 110;
+  return 195;
 }
 
 // ── 型定義 ────────────────────────────────────
 
-type IncomeType = "employee" | "freelance";
 type FundType = "balanced" | "stock" | "bond"; // 運用タイプ
-
-interface IdecoInputs {
-  incomeType: IncomeType;
-  income: number;           // 年収（万円）
-  expense: number;          // 経費（個人事業主のみ）
-  monthly: number;          // 毎月掛金（万円）
-  returnRate: number;       // 想定利回り（%）
-  currentAge: number;       // 現在年齢
-  retireAge: number;        // 受取開始年齢（60〜75歳）
-  dependents: number;       // 扶養人数
-  hasSpouse: boolean;       // 配偶者あり
-}
 
 interface IdecoResult {
   annualDeduction: number;      // 年間掛金
@@ -170,20 +167,9 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 // ── メインコンポーネント ──────────────────────
 
 export default function Ideco() {
-  const [inp, setInp] = useState<IdecoInputs>({
-    incomeType: "employee",
-    income: 500,
-    expense: 100,
-    monthly: 2.3,
-    returnRate: 5,
-    currentAge: 35,
-    retireAge: 60,
-    dependents: 0,
-    hasSpouse: false,
-  });
-
-  const set = <K extends keyof IdecoInputs>(key: K, val: IdecoInputs[K]) =>
-    setInp(prev => ({ ...prev, [key]: val }));
+  // Zustandストアから状態を取得（ページ移動しても値が保持される／ホームの一括反映にも対応）
+  const { ideco: inp, setIdecoInp } = useSimulatorStore();
+  const set = setIdecoInp;
 
   const result = useMemo(() => calcIdeco(inp), [inp]);
   const fmtM = (n: number) => `${n.toLocaleString()}万円`;

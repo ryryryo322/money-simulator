@@ -7,6 +7,12 @@
 import { create } from "zustand";
 import type { EmployeeInputs, FreelanceInputs } from "@/types/income";
 import type { SoloInputs, CorpInputs } from "@/types/microCorp";
+import type { IdecoInputs } from "@/types/ideco";
+import type { FurusatoInputs } from "@/types/furusato";
+import type { KokuhoInputs } from "@/types/kokuho";
+import type { TokyoKokuhoInputs } from "@/types/tokyoKokuho";
+import { calcKyuyoDeduction } from "@/lib/tax";
+import { manToYen, yenToMan } from "@/lib/formatter";
 
 // ============================================
 // 共通プロフィール
@@ -95,6 +101,60 @@ const microCorpInitial: MicroCorpState = {
   },
 };
 
+// ── Ideco の初期値 ────────────────────────────
+
+const idecoInitial: IdecoInputs = {
+  incomeType: "employee",
+  income: 500,
+  expense: 100,
+  monthly: 2.3,
+  returnRate: 5,
+  currentAge: 35,
+  retireAge: 60,
+  dependents: 0,
+  hasSpouse: false,
+};
+
+// ── Furusato の初期値 ─────────────────────────
+
+const furusatoInitial: FurusatoInputs = {
+  incomeType: "employee",
+  income: 500,
+  expense: 100,
+  blueReturn: 65,
+  dependents: 0,
+  hasSpouse: false,
+  hasDisability: false,
+  donation: 5,
+};
+
+// ── Kokuho の初期値 ───────────────────────────
+
+const kokuhoInitial: KokuhoInputs = {
+  income: 400,
+  age: 35,
+  members: 1,
+  kokuhoCity: "東京都（23区）",
+  manualIryoRate: 8.0,
+  manualShienRate: 2.7,
+  manualKaigoRate: 2.2,
+  manualIryoKintou: 25000,
+  manualShienKintou: 8000,
+  manualKaigoKintou: 11000,
+  manualHeitou: 20000,
+};
+
+// ── TokyoKokuho の初期値 ──────────────────────
+
+const tokyoKokuhoInitial: TokyoKokuhoInputs = {
+  ward: "新宿区",
+  incomeType: "employee",
+  annualIncome: 500,
+  businessIncome: 400,
+  age: 35,
+  members: 1,
+};
+
 // ── ストア定義 ───────────────────────────────
 
 interface SimulatorStore {
@@ -117,6 +177,22 @@ interface SimulatorStore {
   microCorp: MicroCorpState;
   setSoloInp: <K extends keyof SoloInputs>(key: K, value: SoloInputs[K]) => void;
   setCorpInp: <K extends keyof CorpInputs>(key: K, value: CorpInputs[K]) => void;
+
+  // Ideco
+  ideco: IdecoInputs;
+  setIdecoInp: <K extends keyof IdecoInputs>(key: K, value: IdecoInputs[K]) => void;
+
+  // Furusato
+  furusato: FurusatoInputs;
+  setFurusatoInp: <K extends keyof FurusatoInputs>(key: K, value: FurusatoInputs[K]) => void;
+
+  // Kokuho
+  kokuho: KokuhoInputs;
+  setKokuhoInp: <K extends keyof KokuhoInputs>(key: K, value: KokuhoInputs[K]) => void;
+
+  // TokyoKokuho
+  tokyoKokuho: TokyoKokuhoInputs;
+  setTokyoKokuhoInp: <K extends keyof TokyoKokuhoInputs>(key: K, value: TokyoKokuhoInputs[K]) => void;
 }
 
 export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
@@ -128,6 +204,15 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
   // プロフィールの内容を全シミュレーターに一括反映
   applyProfile: () => {
     const { profile } = get();
+
+    // 会社員の年収（万円）→ 給与所得控除後の金額（万円）に概算変換
+    // 国保計算など「控除後の総所得」を直接入力する画面向け
+    const empIncomeAfterDeductionMan = yenToMan(
+      Math.max(0, manToYen(profile.income) - calcKyuyoDeduction(manToYen(profile.income)))
+    );
+    // 個人事業主の事業所得（万円）＝ 売上 − 経費（青色控除前の概算）
+    const freelanceBusinessIncomeMan = Math.max(0, profile.income - profile.expense);
+
     set(s => ({
       // LoanNisa
       loanNisa: {
@@ -165,6 +250,41 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
           hasSpouse: profile.hasSpouse,
         },
       },
+      // Ideco
+      ideco: {
+        ...s.ideco,
+        incomeType: profile.workType,
+        income: profile.income,
+        expense: profile.expense,
+        currentAge: profile.age,
+        dependents: profile.dependents,
+        hasSpouse: profile.hasSpouse,
+      },
+      // Furusato
+      furusato: {
+        ...s.furusato,
+        incomeType: profile.workType,
+        income: profile.income,
+        expense: profile.expense,
+        dependents: profile.dependents,
+        hasSpouse: profile.hasSpouse,
+      },
+      // Kokuho（画面の入力は「控除後の総所得」なので変換して渡す）
+      kokuho: {
+        ...s.kokuho,
+        income: profile.workType === "employee" ? empIncomeAfterDeductionMan : freelanceBusinessIncomeMan,
+        age: profile.age,
+        kokuhoCity: profile.kokuhoCity,
+        members: s.kokuho.members,
+      },
+      // TokyoKokuho
+      tokyoKokuho: {
+        ...s.tokyoKokuho,
+        incomeType: profile.workType,
+        annualIncome: profile.income,
+        businessIncome: freelanceBusinessIncomeMan,
+        age: profile.age,
+      },
     }));
   },
 
@@ -186,4 +306,24 @@ export const useSimulatorStore = create<SimulatorStore>((set, get) => ({
     set(s => ({ microCorp: { ...s.microCorp, soloInp: { ...s.microCorp.soloInp, [key]: value } } })),
   setCorpInp: (key, value) =>
     set(s => ({ microCorp: { ...s.microCorp, corpInp: { ...s.microCorp.corpInp, [key]: value } } })),
+
+  // ── Ideco ──
+  ideco: idecoInitial,
+  setIdecoInp: (key, value) =>
+    set(s => ({ ideco: { ...s.ideco, [key]: value } })),
+
+  // ── Furusato ──
+  furusato: furusatoInitial,
+  setFurusatoInp: (key, value) =>
+    set(s => ({ furusato: { ...s.furusato, [key]: value } })),
+
+  // ── Kokuho ──
+  kokuho: kokuhoInitial,
+  setKokuhoInp: (key, value) =>
+    set(s => ({ kokuho: { ...s.kokuho, [key]: value } })),
+
+  // ── TokyoKokuho ──
+  tokyoKokuho: tokyoKokuhoInitial,
+  setTokyoKokuhoInp: (key, value) =>
+    set(s => ({ tokyoKokuho: { ...s.tokyoKokuho, [key]: value } })),
 }));

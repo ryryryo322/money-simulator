@@ -8,34 +8,33 @@ import Layout from "@/components/Layout";
 import { Card, SectionTitle, SliderInput, StatRow } from "@/components/ui";
 import AdSlot from "@/components/AdSlot";
 import SimulatorGrid from "@/components/SimulatorGrid";
-import { calcKyuyoDeduction as calcKyuyoDeductionYen, getMarginalIncomeTaxRate } from "@/lib/tax";
-import { manToYen, yenToMan } from "@/lib/formatter";
+import { useSimulatorStore } from "@/store/simulatorStore";
+import type { FurusatoInputs } from "@/types/furusato";
 
 // ── 定数 ─────────────────────────────────────
-// 税率表・給与所得控除は lib/tax の共通ロジックを利用します（このページの単位は万円）
 
-/** 給与所得控除テーブル（万円） */
+/** 給与所得控除テーブル */
 function calcKyuyoDeduction(income: number): number {
-  return yenToMan(calcKyuyoDeductionYen(manToYen(income)));
+  if (income <= 162.5) return 55;
+  if (income <= 180) return income * 0.4 - 10;
+  if (income <= 360) return income * 0.3 + 8;
+  if (income <= 660) return income * 0.2 + 44;
+  if (income <= 850) return income * 0.1 + 110;
+  return 195;
 }
 
-/** 所得税率（課税所得：万円） */
+/** 所得税率テーブル */
 function calcIncomeTaxRate(taxableIncome: number): number {
-  return getMarginalIncomeTaxRate(manToYen(taxableIncome));
+  if (taxableIncome <= 195) return 0.05;
+  if (taxableIncome <= 330) return 0.10;
+  if (taxableIncome <= 695) return 0.20;
+  if (taxableIncome <= 900) return 0.23;
+  if (taxableIncome <= 1800) return 0.33;
+  if (taxableIncome <= 4000) return 0.40;
+  return 0.45;
 }
 
 // ── 計算ロジック ─────────────────────────────
-
-interface FurusatoInputs {
-  incomeType: "employee" | "freelance"; // 会社員 or 個人事業主
-  income: number;           // 年収・売上（万円）
-  expense: number;          // 経費（個人事業主のみ）
-  blueReturn: number;       // 青色申告控除（個人事業主のみ）
-  dependents: number;       // 扶養家族人数
-  hasSpouse: boolean;       // 配偶者控除あり
-  hasDisability: boolean;   // 障害者控除あり
-  donation: number;         // 寄付金額（万円）
-}
 
 interface FurusatoResult {
   limit: number;            // 控除上限額（万円）
@@ -176,19 +175,9 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 // ── メインコンポーネント ──────────────────────
 
 export default function Furusato() {
-  const [inp, setInp] = useState<FurusatoInputs>({
-    incomeType: "employee",
-    income: 500,
-    expense: 100,
-    blueReturn: 65,
-    dependents: 0,
-    hasSpouse: false,
-    hasDisability: false,
-    donation: 5,
-  });
-
-  const set = <K extends keyof FurusatoInputs>(key: K, val: FurusatoInputs[K]) =>
-    setInp(prev => ({ ...prev, [key]: val }));
+  // Zustandストアから状態を取得（ページ移動しても値が保持される／ホームの一括反映にも対応）
+  const { furusato: inp, setFurusatoInp } = useSimulatorStore();
+  const set = setFurusatoInp;
 
   const result = useMemo(() => calcFurusato(inp), [inp]);
 

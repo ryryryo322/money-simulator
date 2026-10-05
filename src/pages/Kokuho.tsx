@@ -11,25 +11,12 @@ import AdSlot from "@/components/AdSlot";
 import SimulatorGrid from "@/components/SimulatorGrid";
 import { KOKUHO_RATES } from "@/constants/kokuhoRates";
 import { calcKokuhoAccurate, resolveKokuhoRate } from "@/lib/insurance/kokuho";
+import { useSimulatorStore } from "@/store/simulatorStore";
+import type { KokuhoInputs } from "@/types/kokuho";
 
 // ── 計算ロジック ─────────────────────────────
 // 国保の計算本体は lib/insurance/kokuho.ts（calcKokuhoAccurate）に一本化しています。
 // このページでは「万円入力 ⇔ 円計算」の変換のみを行います。
-
-interface KokuhoInputs {
-  income: number;        // 総所得（万円）青色控除後
-  age: number;           // 年齢
-  members: number;       // 世帯の国保加入人数
-  kokuhoCity: string;    // 自治体
-  // 手動入力
-  manualIryoRate: number;
-  manualShienRate: number;
-  manualKaigoRate: number;
-  manualIryoKintou: number;
-  manualShienKintou: number;
-  manualKaigoKintou: number;
-  manualHeitou: number;
-}
 
 interface KokuhoResult {
   shotokuBase: number;   // 所得割計算基準（総所得-43万）
@@ -98,22 +85,9 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 // ── メインコンポーネント ──────────────────────
 
 export default function Kokuho() {
-  const [inp, setInp] = useState<KokuhoInputs>({
-    income: 400,
-    age: 35,
-    members: 1,
-    kokuhoCity: "東京都（23区）",
-    manualIryoRate: 8.0,
-    manualShienRate: 2.7,
-    manualKaigoRate: 2.2,
-    manualIryoKintou: 25000,
-    manualShienKintou: 8000,
-    manualKaigoKintou: 11000,
-    manualHeitou: 20000,
-  });
-
-  const set = <K extends keyof KokuhoInputs>(key: K, val: KokuhoInputs[K]) =>
-    setInp(prev => ({ ...prev, [key]: val }));
+  // Zustandストアから状態を取得（ページ移動しても値が保持される／ホームの一括反映にも対応）
+  const { kokuho: inp, setKokuhoInp } = useSimulatorStore();
+  const set = setKokuhoInp;
 
   const result = useMemo(() => calcKokuho(inp), [inp]);
 
