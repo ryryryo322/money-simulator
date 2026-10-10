@@ -1,6 +1,10 @@
 // ============================================
-// 国民健康保険シミュレーター
+// 国民健康保険シミュレーター（v2 — 自治体別制度対応版）
 // /kokuho
+//
+// 自治体ごとの算定方式・料率・均等割・平等割・賦課限度額・
+// 子ども・子育て支援金分の違いを考慮して計算します。
+// 公式情報が確認できていない区分は、推測値を使わず「未確認」と表示します。
 // ============================================
 
 import { useState, useMemo } from "react";
@@ -9,43 +13,17 @@ import Layout from "@/components/Layout";
 import { Card, SectionTitle, SliderInput, StatRow } from "@/components/ui";
 import AdSlot from "@/components/AdSlot";
 import SimulatorGrid from "@/components/SimulatorGrid";
-import { KOKUHO_RATES } from "@/constants/kokuhoRates";
-import { calcKokuhoAccurate, resolveKokuhoRate } from "@/lib/insurance/kokuho";
-import { useSimulatorStore } from "@/store/simulatorStore";
-import type { KokuhoInputs } from "@/types/kokuho";
+import { MUNICIPALITIES, findMunicipality } from "@/constants/municipalities";
+import { calcMunicipalityKokuho } from "@/lib/insurance/municipalityKokuho";
+import type { MunicipalityKokuhoResult } from "@/lib/insurance/municipalityKokuho";
 
-// ── 計算ロジック ─────────────────────────────
-// 国保の計算本体は lib/insurance/kokuho.ts（calcKokuhoAccurate）に一本化しています。
-// このページでは「万円入力 ⇔ 円計算」の変換のみを行います。
+// ── 入力型 ────────────────────────────────────
 
-interface KokuhoResult {
-  shotokuBase: number;   // 所得割計算基準（総所得-43万）
-  kintoRate: number;     // 軽減率
-  kintoLabel: string;    // 軽減区分
-  iryoYen: number;       // 医療分
-  shienYen: number;      // 支援金分
-  kaigoYen: number;      // 介護分
-  totalYen: number;      // 合計
-  totalMan: number;      // 合計（万円）
-}
-
-function calcKokuho(inp: KokuhoInputs): KokuhoResult {
-  const r = calcKokuhoAccurate({
-    totalIncomeYen: inp.income * 10000,
-    members: inp.members,
-    age: inp.age,
-    rate: resolveKokuhoRate(inp.kokuhoCity, inp),
-  });
-  return {
-    shotokuBase: Math.round(r.shotokuBaseYen / 10000 * 10) / 10,
-    kintoRate: r.kintoRate,
-    kintoLabel: r.kintoLabel,
-    iryoYen: r.iryoYen,
-    shienYen: r.shienYen,
-    kaigoYen: r.kaigoYen,
-    totalYen: r.totalYen,
-    totalMan: Math.round(r.totalYen / 10000 * 10) / 10,
-  };
+interface KokuhoInputsV2 {
+  income: number;              // 総所得（万円）控除後
+  age: number;                 // 年齢（簡略化：世帯全員が同じ年齢として扱う）
+  members: number;             // 世帯の国保加入者数
+  municipalityCode: string;    // 自治体コード
 }
 
 // ── トグルボタン ─────────────────────────────
@@ -63,10 +41,11 @@ const ToggleBtn = ({ active, onClick, children }: {
 
 const FAQ_LIST = [
   { q: "国民健康保険料はいつ決まる？", a: "前年の所得をもとに毎年6〜7月に決定されます。通知書が届いたら確認しましょう。" },
-  { q: "軽減措置とは？", a: "世帯所得が一定以下の場合、均等割・平等割が7割・5割・2割軽減されます。申請不要で自動適用されます。" },
-  { q: "40歳になると保険料が上がる？", a: "はい。40〜64歳は介護保険料（介護分）が加算されます。65歳以上は介護保険料が別途徴収されるため国保から外れます。" },
+  { q: "軽減措置とは？", a: "世帯所得が一定以下の場合、均等割・平等割が7割・5割・2割軽減されます。申請不要で自動適用されます。ただし正確な判定には世帯全員の所得や給与所得者等の人数が必要で、このシミュレーターは簡易判定です。" },
+  { q: "40歳になると保険料が上がる？", a: "はい。40〜64歳は介護保険料（介護分）が加算されます。65歳以上は介護保険料が別途徴収されるため国保の介護分の対象から外れます。" },
+  { q: "子ども・子育て支援金分とは？", a: "2026年度（令和8年度）から新設された区分です。加入者全員、または18歳以上の加入者に対して賦課されます（自治体により異なります）。" },
   { q: "マイクロ法人を作ると国保を抜けられる？", a: "法人で役員報酬を受け取ると協会けんぽ（健康保険）に加入でき、国保から脱退できます。保険料が大幅に下がる場合があります。" },
-  { q: "計算値と実際の通知額が違う理由は？", a: "自治体によって内部調整（按分・限度額調整）が入るため、理論値と通知額が異なる場合があります。特に一部の政令市は調整が強く出ます。" },
+  { q: "このシミュレーターの計算はどこまで正確？", a: "各自治体の公式サイトで確認できた令和8年度の料率・均等割・平等割・賦課限度額をもとに、区分（医療分・支援分・介護分・子ども分）ごとに計算しています。ただし世帯内の年齢差や給与所得者数までは考慮できていません。最終的な金額は必ず自治体からの通知額をご確認ください。" },
 ] as const;
 
 function FaqItem({ q, a }: { q: string; a: string }) {
@@ -82,19 +61,58 @@ function FaqItem({ q, a }: { q: string; a: string }) {
   );
 }
 
+// ── 内訳1行表示 ───────────────────────────────
+
+const BracketRow = ({ result, fmtYen }: {
+  result: MunicipalityKokuhoResult["medical"] | null;
+  fmtYen: (n: number) => string;
+}) => {
+  if (!result) return null;
+  return (
+    <div className="py-3 border-b border-gray-100 dark:border-gray-800 last:border-0">
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{result.label}</span>
+        <span className="text-sm font-bold text-gray-900 dark:text-white">{fmtYen(result.totalYen)}</span>
+      </div>
+      <div className="flex justify-between text-xs text-gray-400">
+        <span>所得割 {fmtYen(result.incomeYen)}</span>
+        <span>均等割 {fmtYen(result.perCapitaYen)}</span>
+        <span>平等割 {fmtYen(result.perHouseholdYen)}</span>
+      </div>
+      {result.cappedByMax && (
+        <p className="text-xs text-amber-500 mt-1">⚠️ 賦課限度額に達しています（上限適用後の金額です）</p>
+      )}
+    </div>
+  );
+};
+
 // ── メインコンポーネント ──────────────────────
 
 export default function Kokuho() {
-  // Zustandストアから状態を取得（ページ移動しても値が保持される／ホームの一括反映にも対応）
-  const { kokuho: inp, setKokuhoInp } = useSimulatorStore();
-  const set = setKokuhoInp;
+  const [inp, setInp] = useState<KokuhoInputsV2>({
+    income: 400,
+    age: 35,
+    members: 1,
+    municipalityCode: "fukuoka",
+  });
 
-  const result = useMemo(() => calcKokuho(inp), [inp]);
+  const set = <K extends keyof KokuhoInputsV2>(key: K, val: KokuhoInputsV2[K]) =>
+    setInp(prev => ({ ...prev, [key]: val }));
+
+  const municipality = useMemo(() => findMunicipality(inp.municipalityCode), [inp.municipalityCode]);
+
+  const result = useMemo(() => {
+    if (!municipality) return null;
+    return calcMunicipalityKokuho({
+      totalIncomeYen: inp.income * 10000,
+      members: inp.members,
+      age: inp.age,
+      municipality,
+    });
+  }, [inp, municipality]);
 
   const fmtYen = (n: number) => `${Math.round(n).toLocaleString()}円`;
   const fmtMan = (n: number) => `${n.toLocaleString()}万円`;
-
-  const selectedRate = KOKUHO_RATES.find(r => r.city === inp.kokuhoCity);
 
   return (
     <Layout title="国民健康保険シミュレーター">
@@ -102,7 +120,7 @@ export default function Kokuho() {
 
         <div className="text-center py-2">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            自治体別の正確な国保料を計算します
+            自治体ごとの料率・区分に基づいて国保料を計算します
           </p>
         </div>
 
@@ -111,7 +129,7 @@ export default function Kokuho() {
           <SectionTitle color="blue">👤 あなたの情報</SectionTitle>
           <Card>
             <SliderInput
-              label="総所得（売上−経費−青色控除）"
+              label="総所得（売上−経費−青色控除、または給与所得控除後）"
               value={inp.income} min={0} max={2000} step={10} unit="万円"
               onChange={v => set("income", v)}
             />
@@ -123,104 +141,99 @@ export default function Kokuho() {
                 className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
                 {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}人</option>)}
               </select>
+              {inp.members > 1 && (
+                <p className="text-xs text-amber-500 mt-1">
+                  ⚠️ 年齢は1つしか入力できないため、世帯全員が同じ年齢として計算されます（特に介護分・子ども分の判定に影響します）
+                </p>
+              )}
             </div>
 
             {/* 自治体選択 */}
-            <div className="mb-5">
+            <div className="mb-2">
               <label className="text-sm font-medium text-gray-600 dark:text-gray-400 block mb-2">自治体</label>
-              <select value={inp.kokuhoCity} onChange={e => set("kokuhoCity", e.target.value)}
+              <select value={inp.municipalityCode} onChange={e => set("municipalityCode", e.target.value)}
                 className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
-                {KOKUHO_RATES.map(r => <option key={r.city} value={r.city}>{r.city}</option>)}
-                <option value="manual">その他（手動入力）</option>
+                {MUNICIPALITIES.map(m => <option key={m.municipalityCode} value={m.municipalityCode}>{m.cityName}</option>)}
               </select>
 
-              {/* 調整レベルメッセージ */}
-              {selectedRate?.adjustmentLevel === "high" && (
-                <p className="text-xs text-red-500 mt-1">⚠️ {selectedRate.note}</p>
+              {municipality && (
+                <>
+                  <p className="text-xs text-gray-400 mt-1">{municipality.calculationMethodLabel}</p>
+                  {municipality.dataCompleteness === "partial" && (
+                    <p className="text-xs text-amber-500 mt-1">
+                      ⚠️ この自治体は一部区分のデータを公式サイト本体から直接確認できていません。{municipality.notes}
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-400 mt-1">
+                    出典：{municipality.source}（最終確認日: {municipality.lastVerified}）
+                  </p>
+                </>
               )}
-              {selectedRate?.adjustmentLevel === "medium" && (
-                <p className="text-xs text-amber-500 mt-1">⚠️ {selectedRate.note}</p>
-              )}
-              {selectedRate?.adjustmentLevel === "low" && (
-                <p className="text-xs text-green-600 mt-1">✅ 計算値と通知額はほぼ一致する傾向があります</p>
-              )}
-              <p className="text-xs text-gray-400 mt-1">計算値は理論値です。正確な金額は自治体窓口でご確認ください。</p>
+              <p className="text-xs text-gray-400 mt-1">
+                この一覧に掲載されていない自治体の正確な計算には対応していません（全国一律の推測値は使用しません）。
+              </p>
             </div>
-
-            {/* 手動入力 */}
-            {inp.kokuhoCity === "manual" && (
-              <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 mb-2 space-y-3">
-                <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">料率を手動入力（%）</p>
-                {([
-                  { label: "医療分 所得割率", key: "manualIryoRate" as const },
-                  { label: "支援金分 所得割率", key: "manualShienRate" as const },
-                  { label: "介護分 所得割率（40〜64歳）", key: "manualKaigoRate" as const },
-                ]).map(({ label, key }) => (
-                  <div key={key} className="flex items-center gap-3">
-                    <span className="text-xs text-gray-600 dark:text-gray-400 w-44">{label}</span>
-                    <input type="number" step="0.1" min="0" max="20" value={inp[key]}
-                      onChange={e => set(key, Number(e.target.value))}
-                      className="w-20 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1 text-sm text-right" />
-                    <span className="text-xs text-gray-400">%</span>
-                  </div>
-                ))}
-                <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mt-2">均等割（円/人）</p>
-                {([
-                  { label: "医療分", key: "manualIryoKintou" as const },
-                  { label: "支援金分", key: "manualShienKintou" as const },
-                  { label: "介護分（40〜64歳）", key: "manualKaigoKintou" as const },
-                ]).map(({ label, key }) => (
-                  <div key={key} className="flex items-center gap-3">
-                    <span className="text-xs text-gray-600 dark:text-gray-400 w-44">{label}</span>
-                    <input type="number" step="100" min="0" value={inp[key]}
-                      onChange={e => set(key, Number(e.target.value))}
-                      className="w-24 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1 text-sm text-right" />
-                    <span className="text-xs text-gray-400">円</span>
-                  </div>
-                ))}
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-gray-600 dark:text-gray-400 w-44">平等割（世帯）</span>
-                  <input type="number" step="100" min="0" value={inp.manualHeitou}
-                    onChange={e => set("manualHeitou", Number(e.target.value))}
-                    className="w-24 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1 text-sm text-right" />
-                  <span className="text-xs text-gray-400">円</span>
-                </div>
-              </div>
-            )}
           </Card>
         </section>
 
         {/* 結果 */}
-        <section>
-          <SectionTitle color="orange">📊 計算結果</SectionTitle>
+        {result && municipality && (
+          <section>
+            <SectionTitle color="orange">📊 計算結果</SectionTitle>
 
-          {/* 軽減区分 */}
-          {result.kintoRate < 1 && (
-            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl p-3 mb-3 text-center">
-              <p className="text-sm font-bold text-green-600 dark:text-green-400">
-                🎉 {result.kintoLabel}が適用されています
-              </p>
-            </div>
-          )}
-
-          {/* 年間保険料ハイライト */}
-          <div className="bg-gradient-to-r from-brand-500 to-orange-400 rounded-2xl p-5 mb-4 text-center">
-            <p className="text-white/80 text-xs font-medium mb-1">年間国民健康保険料（概算）</p>
-            <p className="text-white text-4xl font-black mb-1">{fmtMan(result.totalMan)}</p>
-            <p className="text-white/70 text-xs">月額：約{fmtMan(Math.round(result.totalMan / 12 * 10) / 10)}</p>
-          </div>
-
-          <Card>
-            <StatRow label="所得割計算基準（総所得-43万）" value={fmtMan(result.shotokuBase)} />
-            <StatRow label="医療分" value={fmtYen(result.iryoYen)} />
-            <StatRow label="支援金分" value={fmtYen(result.shienYen)} />
-            {inp.age >= 40 && inp.age <= 64 && (
-              <StatRow label="介護分（40〜64歳）" value={fmtYen(result.kaigoYen)} />
+            {/* 軽減区分 */}
+            {result.reduction.rate < 1 && (
+              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl p-3 mb-3 text-center">
+                <p className="text-sm font-bold text-green-600 dark:text-green-400">
+                  🎉 {result.reduction.label}が適用されています（簡易判定）
+                </p>
+              </div>
             )}
-            <StatRow label="年間合計" value={fmtYen(result.totalYen)} highlight />
-            <StatRow label="月額換算" value={fmtYen(Math.round(result.totalYen / 12))} />
-          </Card>
-        </section>
+
+            {/* 年間保険料ハイライト */}
+            <div className="bg-gradient-to-r from-brand-500 to-orange-400 rounded-2xl p-5 mb-4 text-center">
+              <p className="text-white/80 text-xs font-medium mb-1">年間国民健康保険料（概算）</p>
+              <p className="text-white text-4xl font-black mb-1">{fmtYen(result.totalYen)}</p>
+              <p className="text-white/70 text-xs">月額：約{fmtYen(Math.round(result.totalYen / 12))}</p>
+            </div>
+
+            <Card>
+              <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-800 text-sm mb-1">
+                <span className="text-gray-500">所得割計算基準（総所得−43万円）</span>
+                <span className="font-semibold text-gray-900 dark:text-white">{fmtMan(Math.round(result.shotokuBaseYen / 10000 * 10) / 10)}</span>
+              </div>
+
+              <BracketRow result={result.medical} fmtYen={fmtYen} />
+              <BracketRow result={result.support} fmtYen={fmtYen} />
+              {inp.age >= 40 && inp.age <= 64 && result.care && (
+                <BracketRow result={result.care} fmtYen={fmtYen} />
+              )}
+              {inp.age < 40 || inp.age > 64 ? (
+                <p className="text-xs text-gray-400 py-2">介護分：対象外（40〜64歳のみ）</p>
+              ) : null}
+
+              {result.childSupport ? (
+                <BracketRow result={result.childSupport} fmtYen={fmtYen} />
+              ) : result.childSupportMissing ? (
+                <div className="py-3">
+                  <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">子ども・子育て支援金分：データ未確認</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    現在、この自治体の公式料率データを登録していないため、子ども・子育て支援金分を計算に含めていません。実際の保険料はここに表示した金額より高くなります。
+                  </p>
+                </div>
+              ) : null}
+
+              <div className="flex justify-between py-2 mt-2 border-t border-gray-200 dark:border-gray-700">
+                <span className="font-bold text-gray-900 dark:text-white">年間合計</span>
+                <span className="font-black text-brand-500">{fmtYen(result.totalYen)}</span>
+              </div>
+            </Card>
+
+            <p className="text-xs text-gray-400 mt-2 px-1">
+              {municipality.reductionNote}
+            </p>
+          </section>
+        )}
 
         {/* 広告 */}
         <AdSlot slot="result" context="kokuho" />
@@ -247,15 +260,15 @@ export default function Kokuho() {
             <div className="space-y-5 text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
               <div>
                 <h2 className="text-base font-bold text-gray-900 dark:text-white mb-2">国民健康保険料の計算方法</h2>
-                <p>国保料は「所得割（所得×料率）＋均等割（加入者×定額）＋平等割（世帯×定額）」で計算されます。料率は自治体ごとに異なりますが、計算式は全国共通です。</p>
+                <p>国保料は「所得割（所得×料率）＋均等割（加入者×定額）＋平等割（世帯×定額）」などの区分の合計で計算されます。方式（2方式・3方式・4方式）・料率・金額は自治体ごとに異なります。</p>
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-gray-900 dark:text-white mb-2">2026年度（令和8年度）からの変更点</h2>
+                <p>「子ども・子育て支援金分」が新設されました。自治体により、全加入者が対象の場合と18歳以上の加入者にのみ追加負担が生じる場合があります。</p>
               </div>
               <div>
                 <h2 className="text-base font-bold text-gray-900 dark:text-white mb-2">国保料を下げる方法</h2>
                 <p>①青色申告特別控除（最大65万円）で所得を減らす、②iDeCoや小規模企業共済で所得控除を増やす、③マイクロ法人を設立して協会けんぽに切り替える、などの方法があります。</p>
-              </div>
-              <div>
-                <h2 className="text-base font-bold text-gray-900 dark:text-white mb-2">上限額（賦課限度額）について</h2>
-                <p>国保料には上限があります。医療分65万円・支援金分24万円・介護分17万円（2024年度）が上限です。高所得者はこの上限に達することがあります。</p>
               </div>
             </div>
           </Card>
@@ -269,7 +282,7 @@ export default function Kokuho() {
         <SimulatorGrid excludeId="kokuho" />
 
         <p className="text-center text-xs text-gray-400 dark:text-gray-600 pb-4">
-          ※計算値は理論値です。実際の保険料は自治体の窓口または公式サイトでご確認ください。
+          ※本シミュレーションは各自治体の公式情報をもとにした概算です。実際の保険料は自治体からの通知額が優先されます。軽減制度の判定は簡易判定であり、正確な判定には世帯全員の所得等の情報が必要です。
         </p>
       </div>
     </Layout>
