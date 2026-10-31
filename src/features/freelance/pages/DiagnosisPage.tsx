@@ -2,13 +2,14 @@
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { AGENTS } from "../data/agents";
-import { diagnose, type DiagnosisInput, type DiagnosisResult, type ReasonResult, type WorkStyle } from "../lib/diagnose";
+import { diagnose, WEIGHTS, type DiagnosisInput, type DiagnosisOutput, type DiagnosisResult, type WorkStyle } from "../lib/diagnose";
 import { LANG_LABELS, REGION_LABELS } from "../lib/format";
 import { breadcrumbJsonLd, useDocumentHead } from "../lib/useDocumentHead";
 import { track } from "../lib/track";
 import { SERVICE_NAME, SITE_ORIGIN } from "../config";
 import type { LangKey, RegionKey } from "../types";
 import AgentLink from "../components/AgentLink";
+import AgentDetails from "../components/AgentDetails";
 import { AdNotice } from "../components/Notices";
 
 const YEARS: { label: string; value: number }[] = [
@@ -25,14 +26,6 @@ const WORK_STYLES: { label: string; value: WorkStyle; hint: string }[] = [
   { label: "リモート相談可", value: "remote_ok", hint: "週数日の出社があってもよい" },
   { label: "出社・常駐でも可", value: "onsite_ok", hint: "働き方にこだわらない" },
 ];
-
-const ICON: Record<ReasonResult, { mark: string; cls: string }> = {
-  match: { mark: "○", cls: "text-emerald-600 dark:text-emerald-400" },
-  partial: { mark: "△", cls: "text-amber-600 dark:text-amber-400" },
-  mismatch: { mark: "×", cls: "text-red-600 dark:text-red-400" },
-  unknown: { mark: "？", cls: "text-slate-400" },
-  skipped: { mark: "－", cls: "text-slate-400" },
-};
 
 const fieldLabel = "block text-sm font-semibold mb-2";
 const selectCls =
@@ -55,7 +48,7 @@ export default function DiagnosisPage() {
   const [region, setRegion] = useState<RegionKey | "any">("any");
   const [wantWeek3, setWantWeek3] = useState(false);
   const [price, setPrice] = useState<string>("");
-  const [results, setResults] = useState<DiagnosisResult[] | null>(null);
+  const [output, setOutput] = useState<DiagnosisOutput | null>(null);
   const [priceNoted, setPriceNoted] = useState(false);
   const started = useRef(false);
 
@@ -79,7 +72,7 @@ export default function DiagnosisPage() {
       desiredPriceMan: priceNum != null && Number.isFinite(priceNum) && priceNum > 0 ? priceNum : null,
     };
     setPriceNoted(input.desiredPriceMan != null);
-    setResults(diagnose(AGENTS, input));
+    setOutput(diagnose(AGENTS, input));
     track("freelance_diagnosis_complete", {
       language,
       years,
@@ -102,7 +95,7 @@ export default function DiagnosisPage() {
       <div>
         <h1 className="text-2xl font-black tracking-tight">条件別診断</h1>
         <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-          条件を入力すると、{AGENTS.length}社との適合度を理由つきで表示します。出典で確認できていない項目は、点数に含めず「？」で表示します。
+          条件を入力すると、{AGENTS.length}社との適合度を、判定の理由つきで表示します。確認できていない項目は「未確認」とし、点数には含めません。
         </p>
       </div>
 
@@ -141,6 +134,9 @@ export default function DiagnosisPage() {
               </option>
             ))}
           </select>
+          <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+            ※ 実務経験の条件は案件ごとに異なり、各社共通の登録条件を確認できていないため、診断のスコアには使っていません。
+          </p>
         </div>
 
         <fieldset>
@@ -221,79 +217,142 @@ export default function DiagnosisPage() {
       </div>
 
       {/* ── 結果 ── */}
-      {results && (
-        <section id="diagnosis-result" className="space-y-4 scroll-mt-20">
+      {output && (
+        <section id="diagnosis-result" className="space-y-5 scroll-mt-20">
           <h2 className="text-lg font-bold">診断結果</h2>
           <AdNotice />
-          {priceNoted && (
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              希望単価は、比較できる公式データが無いため適合度に含めていません。面談で相場を確認してください。
+
+          <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 text-xs text-slate-600 dark:text-slate-300 leading-relaxed space-y-1">
+            <p className="font-semibold text-slate-800 dark:text-slate-100">参考スコアの見方</p>
+            <p>
+              実際の案件とのマッチ率ではなく、「確認できた情報にもとづく参考値」です。確認できた項目の配点のうち、条件に一致した項目の割合で計算しています。
+              「未確認」は一致にも不一致にも数えません。
             </p>
-          )}
-          {results.every((r) => r.score == null) && (
+            <p>
+              配点：使用言語 {WEIGHTS.language}／勤務形態 {WEIGHTS.workStyle}／言語×フルリモート {WEIGHTS.combo}（両方を指定した場合）／週3日以下 {WEIGHTS.weekly3}／勤務地 {WEIGHTS.region}。
+              確認できた項目が少ないエージェントは、点数と順位を出さず別枠に表示します。
+            </p>
+            <p>
+              情報が増えると、順位が変わる可能性があります。
+              {priceNoted && "希望単価は、エージェントごとの単価比較データがないため、適合度には反映していません。面談で確認してください。"}
+            </p>
+          </div>
+
+          {output.ranked.length > 0 ? (
+            <ol className="space-y-4">
+              {output.ranked.map((r) => (
+                <ResultCard key={r.agent.id} r={r} />
+              ))}
+            </ol>
+          ) : (
             <p className="rounded-xl bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-900 p-3 text-xs leading-relaxed">
-              入力条件のうち、判定できた項目が少ないため点数は表示していません。勤務形態や週3日以下などを指定すると、差が出やすくなります。
+              入力条件のうち確認できた項目が少なく、順位を付けられるエージェントがありませんでした。勤務形態や週3日以下などを指定すると、判定しやすくなります。
               <Link to="/freelance/agents/" className="underline ml-1">
                 比較表を見る
               </Link>
             </p>
           )}
-          <ol className="space-y-4">
-            {results.map((r, i) => (
-              <li
-                key={r.agent.id}
-                className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{i + 1}位</p>
-                    <h3 className="text-base font-bold">{r.agent.name}</h3>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    {r.score == null ? (
-                      <p className="text-sm font-semibold text-slate-500">判定材料不足</p>
-                    ) : (
-                      <p className="text-2xl font-black text-blue-700 dark:text-blue-300">
-                        {r.score}
-                        <span className="text-sm font-bold">%</span>
-                      </p>
-                    )}
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">確認できた{r.evaluatedCount}項目で判定</p>
-                  </div>
-                </div>
 
-                {r.score != null && (
-                  <div className="mt-3 h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden" aria-hidden="true">
-                    <div className="h-full bg-blue-600" style={{ width: `${r.score}%` }} />
-                  </div>
-                )}
+          {output.insufficient.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-base font-bold">判定材料が不足しているエージェント</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                入力条件のうち、確認できた情報が少ないため、点数と順位は表示していません。「未確認」は、条件に合わないという意味ではありません。
+              </p>
+              <ul className="space-y-4">
+                {output.insufficient.map((r) => (
+                  <ResultCard key={r.agent.id} r={r} />
+                ))}
+              </ul>
+            </div>
+          )}
 
-                <ul className="mt-4 space-y-2">
-                  {r.reasons.map((reason, idx) => (
-                    <li key={idx} className="flex gap-2 text-sm leading-snug">
-                      <span className={`w-5 flex-shrink-0 text-center font-bold ${ICON[reason.result].cls}`}>
-                        {ICON[reason.result].mark}
-                      </span>
-                      <span>
-                        <span className="font-semibold">{reason.label}：</span>
-                        {reason.text}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-
-                <div className="mt-4">
-                  <AgentLink agent={r.agent} placement="result" showPixel />
-                </div>
-              </li>
-            ))}
-          </ol>
           <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-            ○＝出典で確認できた／△＝限定的／×＝条件に合わない可能性／？＝未確認（点数に含めません）／－＝判定対象外。
             診断結果は目安です。最終的な条件は、各社の公式サイトや面談でご確認ください。
           </p>
         </section>
       )}
+    </div>
+  );
+}
+
+function ResultCard({ r }: { r: DiagnosisResult }) {
+  const group = (outcome: "match" | "mismatch" | "unknown") => r.reasons.filter((x) => x.outcome === outcome);
+  const matches = group("match");
+  const mismatches = group("mismatch");
+  const unknowns = group("unknown");
+
+  return (
+    <li className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 list-none">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          {r.rank != null && (
+            <p className="text-xs text-slate-500 dark:text-slate-400">{r.rank}位（参考）</p>
+          )}
+          <h3 className="text-base font-bold">{r.agent.name}</h3>
+        </div>
+        <div className="text-right flex-shrink-0">
+          {r.score == null ? (
+            <p className="text-sm font-semibold text-slate-500">判定材料不足</p>
+          ) : (
+            <p className="text-2xl font-black text-blue-700 dark:text-blue-300">
+              {r.score}
+              <span className="text-sm font-bold">%</span>
+              <span className="ml-1 text-[10px] font-normal text-slate-500">参考スコア</span>
+            </p>
+          )}
+          <p className="text-[11px] text-slate-500 dark:text-slate-400">
+            確認できた項目 {r.checked}/{r.requested}（配点）
+          </p>
+        </div>
+      </div>
+
+      {r.score != null && (
+        <div className="mt-3 h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden" aria-hidden="true">
+          <div className="h-full bg-blue-600" style={{ width: `${r.score}%` }} />
+        </div>
+      )}
+
+      <div className="mt-4 space-y-3 text-sm">
+        <ReasonGroup title="条件一致" mark="○" cls="text-emerald-600 dark:text-emerald-400" items={matches} />
+        <ReasonGroup title="条件不一致" mark="×" cls="text-red-600 dark:text-red-400" items={mismatches} />
+        <ReasonGroup title="未確認（点数に含めません）" mark="？" cls="text-slate-400" items={unknowns} />
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <AgentLink agent={r.agent} placement="result" showPixel />
+        <AgentDetails agent={r.agent} placement="result" />
+      </div>
+    </li>
+  );
+}
+
+function ReasonGroup({
+  title,
+  mark,
+  cls,
+  items,
+}: {
+  title: string;
+  mark: string;
+  cls: string;
+  items: { label: string; text: string }[];
+}) {
+  if (items.length === 0) return null;
+  return (
+    <div>
+      <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">{title}</p>
+      <ul className="space-y-1.5">
+        {items.map((x, i) => (
+          <li key={i} className="flex gap-2 leading-snug">
+            <span className={`w-5 flex-shrink-0 text-center font-bold ${cls}`}>{mark}</span>
+            <span>
+              <span className="font-semibold">{x.label}：</span>
+              {x.text}
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

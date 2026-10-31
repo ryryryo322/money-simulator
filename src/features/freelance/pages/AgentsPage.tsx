@@ -1,4 +1,5 @@
 // /freelance/agents/ エージェント比較ページ
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { AGENTS } from "../data/agents";
 import { COMPARE_ROWS, TONE_CLASS } from "../lib/format";
@@ -7,6 +8,7 @@ import { DATA_CHECKED_AT, SERVICE_NAME, SITE_ORIGIN } from "../config";
 import AgentLink from "../components/AgentLink";
 import AgentDetails from "../components/AgentDetails";
 import { AdNotice } from "../components/Notices";
+import { track } from "../lib/track";
 
 export default function AgentsPage() {
   useDocumentHead({
@@ -17,6 +19,10 @@ export default function AgentsPage() {
       { name: "エージェント比較", url: `${SITE_ORIGIN}/freelance/agents/` },
     ]),
   });
+
+  useEffect(() => {
+    track("freelance_compare_view");
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -30,9 +36,14 @@ export default function AgentsPage() {
       <div>
         <h1 className="text-2xl font-black tracking-tight">ITフリーランスエージェント比較（{AGENTS.length}社）</h1>
         <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-          「フルリモート」と「リモート相談可能」は別の項目として表示しています。確認できていない情報は「未確認」です（「なし」の意味ではありません）。
+          公式サイトの案件ページで確認できた内容を優先し、確認できていない項目は「未確認」と表示しています（「なし」「非対応」の意味ではありません）。
           調査日：{DATA_CHECKED_AT}
         </p>
+        <ul className="mt-3 list-disc pl-5 space-y-1 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+          <li>「フルリモート」（出社不要が原則）と「リモート相談可能」（一部出社を含む）は別の項目です。</li>
+          <li>案件が「ある」ことと、案件が「多い」ことは別です。割合や件数は、確認できた場合のみ記載しています。</li>
+          <li>「公式未確認」と付いた項目は第三者メディアの情報です。案件数は公式表記と第三者調査値を分けて表示しており、集計範囲が異なる場合があります。</li>
+        </ul>
       </div>
 
       <AdNotice />

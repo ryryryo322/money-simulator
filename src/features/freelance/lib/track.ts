@@ -19,11 +19,11 @@ declare global {
 }
 
 export type FreelanceEvent =
+  | "freelance_compare_view" // エージェント比較ページの閲覧
   | "freelance_diagnosis_start" // 診断開始（フォームに最初に触れた時）
   | "freelance_diagnosis_complete" // 診断完了（結果を表示した時）
   | "freelance_agent_detail_click" // 詳細・出典を開いた時
-  | "freelance_official_click" // 公式サイトへの通常リンクのクリック
-  | "freelance_affiliate_click"; // アフィリエイトリンクのクリック（成果ではない）
+  | "agent_outbound_click"; // エージェントのリンクのクリック（link_type で公式/広告を区別。成果ではない）
 
 export function track(event: FreelanceEvent, params: Record<string, string | number | boolean | undefined> = {}) {
   try {

@@ -24,10 +24,11 @@ export default function AgentLink({ agent, placement, className, showPixel, chil
   const href = aff ? (aff.affiliateUrl as string) : agent.officialUrl;
 
   const onClick = () => {
-    track(aff ? "freelance_affiliate_click" : "freelance_official_click", {
+    track("agent_outbound_click", {
+      agent_name: agent.name,
       agent_id: agent.id,
-      placement,
       link_type: aff ? "affiliate" : "official",
+      placement,
       asp: aff && aff.asp ? aff.asp : undefined,
     });
   };
