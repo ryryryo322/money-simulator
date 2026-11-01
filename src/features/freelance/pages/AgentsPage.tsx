@@ -110,6 +110,7 @@ export default function AgentsPage() {
               </th>
               {AGENTS.map((a) => (
                 <td key={a.id} className="p-3">
+                  {/* 表とカードの両方がHTMLに含まれるため、計測用画像は表側の1か所だけに出す */}
                   <AgentLink agent={a} placement="table" showPixel />
                 </td>
               ))}
@@ -147,7 +148,7 @@ export default function AgentsPage() {
               <AgentDetails agent={a} placement="card" />
             </div>
             <div className="mt-3">
-              <AgentLink agent={a} placement="card" showPixel />
+              <AgentLink agent={a} placement="card" />
             </div>
           </section>
         ))}

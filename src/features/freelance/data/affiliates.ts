@@ -32,8 +32,29 @@ export const AFFILIATES: Record<string, AffiliateInfo> = {
   levtech: none("levtech"),
   geechs: none("geechs"),
   itpro: none("itpro"),
-  midworks: none("midworks"),
-  pebank: none("pebank"),
+  // A8.net（提携承認済み）。URL・計測用画像は、A8から提供された文字列をそのまま使用（改変しない）
+  midworks: {
+    agentId: "midworks",
+    asp: "A8.net",
+    programId: null, // ASPの画面で確認できるまで空欄（推測で入力しない）
+    rewardYen: null,
+    rewardCondition: null,
+    status: "approved",
+    affiliateUrl: "https://px.a8.net/svt/ejp?a8mat=4BGAV0+35PU3E+3TVC+BX3J6",
+    pixelSrc: "https://www19.a8.net/0.gif?a8mat=4BGAV0+35PU3E+3TVC+BX3J6",
+    lastCheckedAt: "2026-11-01",
+  },
+  pebank: {
+    agentId: "pebank",
+    asp: "A8.net",
+    programId: null,
+    rewardYen: null,
+    rewardCondition: null,
+    status: "approved",
+    affiliateUrl: "https://px.a8.net/svt/ejp?a8mat=4BGAV0+3ITDEI+3SLI+5YJRM",
+    pixelSrc: "https://www17.a8.net/0.gif?a8mat=4BGAV0+3ITDEI+3SLI+5YJRM",
+    lastCheckedAt: "2026-11-01",
+  },
 };
 
 /** 提携承認済みで、使えるURLがある場合のみ返す */

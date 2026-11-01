@@ -15,6 +15,7 @@ interface Props {
   /** 設置場所（計測用）例: "table" / "card" / "result" */
   placement: string;
   className?: string;
+  /** A8等の計測用画像を出す。同じページで同じ広告を複数回出す場合は、1か所だけ true にする（重複計測を避ける） */
   showPixel?: boolean;
   children?: ReactNode;
 }
@@ -38,7 +39,7 @@ export default function AgentLink({ agent, placement, className, showPixel, chil
       <a
         href={href}
         target="_blank"
-        rel={aff ? "sponsored nofollow noopener noreferrer" : "noopener noreferrer"}
+        rel={aff ? "nofollow sponsored noopener" : "noopener noreferrer"}
         onClick={onClick}
         className={
           className ??
@@ -54,7 +55,7 @@ export default function AgentLink({ agent, placement, className, showPixel, chil
         </span>
       )}
       {aff && showPixel && aff.pixelSrc ? (
-        <img width={1} height={1} src={aff.pixelSrc} alt="" className="border-0" />
+        <img width={1} height={1} src={aff.pixelSrc} alt="" className="border-0" aria-hidden="true" />
       ) : null}
     </span>
   );
