@@ -50,6 +50,7 @@ export default function DiagnosisPage() {
   const [price, setPrice] = useState<string>("");
   const [output, setOutput] = useState<DiagnosisOutput | null>(null);
   const [priceNoted, setPriceNoted] = useState(false);
+  const [lastInput, setLastInput] = useState<DiagnosisInput | null>(null);
   const started = useRef(false);
 
   // フォームに最初に触れた時に「診断開始」を1回だけ計測
@@ -72,6 +73,7 @@ export default function DiagnosisPage() {
       desiredPriceMan: priceNum != null && Number.isFinite(priceNum) && priceNum > 0 ? priceNum : null,
     };
     setPriceNoted(input.desiredPriceMan != null);
+    setLastInput(input);
     setOutput(diagnose(AGENTS, input));
     track("freelance_diagnosis_complete", {
       language,
@@ -82,6 +84,19 @@ export default function DiagnosisPage() {
     });
     setTimeout(() => document.getElementById("diagnosis-result")?.scrollIntoView({ behavior: "smooth" }), 50);
   };
+
+  // 表示用：一致率が同じなら同率順位（並び順や計算は変更しない）
+  const rankLabels = new Map<string, string>();
+  let hasTie = false;
+  if (output) {
+    output.ranked.forEach((r, i) => {
+      const first = output.ranked.findIndex((x) => x.score === r.score);
+      const sameCount = output.ranked.filter((x) => x.score === r.score).length;
+      if (sameCount > 1) hasTie = true;
+      rankLabels.set(r.agent.id, `${sameCount > 1 ? "同率" : ""}${first + 1}位`);
+      void i;
+    });
+  }
 
   return (
     <div className="space-y-6">
@@ -95,7 +110,7 @@ export default function DiagnosisPage() {
       <div>
         <h1 className="text-2xl font-black tracking-tight">条件別診断</h1>
         <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-          条件を入力すると、{AGENTS.length}社との適合度を、判定の理由つきで表示します。確認できていない項目は「未確認」とし、点数には含めません。
+          条件を入力すると、{AGENTS.length}社との適合度を、判定の理由つきで表示します。確認できていない項目は「未確認」とし、一致率の計算には含めません。
         </p>
       </div>
 
@@ -223,27 +238,40 @@ export default function DiagnosisPage() {
           <AdNotice />
 
           <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 text-xs text-slate-600 dark:text-slate-300 leading-relaxed space-y-1">
-            <p className="font-semibold text-slate-800 dark:text-slate-100">参考スコアの見方</p>
+            <p className="font-semibold text-slate-800 dark:text-slate-100">数値の見方</p>
             <p>
-              実際の案件とのマッチ率ではなく、「確認できた情報にもとづく参考値」です。確認できた項目の配点のうち、条件に一致した項目の割合で計算しています。
+              <span className="font-semibold">確認済み条件の一致率</span>
+              ：公式サイト等で確認できた条件のうち、希望に一致した配点の割合です。
+              <span className="font-semibold">実際の案件とのマッチ率ではありません。</span>
               「未確認」は一致にも不一致にも数えません。
             </p>
             <p>
+              <span className="font-semibold">条件の確認率</span>
+              ：入力した条件の配点のうち、確認できた配点の割合です。低いほど、未確認の条件が多いことを表します。
+            </p>
+            <p>
               配点：使用言語 {WEIGHTS.language}／勤務形態 {WEIGHTS.workStyle}／言語×フルリモート {WEIGHTS.combo}（両方を指定した場合）／週3日以下 {WEIGHTS.weekly3}／勤務地 {WEIGHTS.region}。
-              確認できた項目が少ないエージェントは、点数と順位を出さず別枠に表示します。
+              確認できた項目が少ないエージェントは、数値と順位を出さず別枠に表示します。
             </p>
             <p>
               情報が増えると、順位が変わる可能性があります。
-              {priceNoted && "希望単価は、エージェントごとの単価比較データがないため、適合度には反映していません。面談で確認してください。"}
+              {priceNoted && "希望単価は、エージェントごとの単価比較データがないため、診断には反映していません。面談で確認してください。"}
             </p>
           </div>
 
           {output.ranked.length > 0 ? (
-            <ol className="space-y-4">
-              {output.ranked.map((r) => (
-                <ResultCard key={r.agent.id} r={r} />
-              ))}
-            </ol>
+            <>
+              {hasTie && (
+                <p className="rounded-xl bg-blue-50 dark:bg-slate-900 border border-blue-100 dark:border-slate-800 p-3 text-xs leading-relaxed">
+                  今回の条件では、確認できた情報に大きな差はありません。各社の公式サイトで最新の案件条件をご確認ください。
+                </p>
+              )}
+              <ol className="space-y-4">
+                {output.ranked.map((r) => (
+                  <ResultCard key={r.agent.id} r={r} input={lastInput} rankLabel={rankLabels.get(r.agent.id) ?? null} />
+                ))}
+              </ol>
+            </>
           ) : (
             <p className="rounded-xl bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-900 p-3 text-xs leading-relaxed">
               入力条件のうち確認できた項目が少なく、順位を付けられるエージェントがありませんでした。勤務形態や週3日以下などを指定すると、判定しやすくなります。
@@ -257,11 +285,11 @@ export default function DiagnosisPage() {
             <div className="space-y-3">
               <h3 className="text-base font-bold">判定材料が不足しているエージェント</h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                入力条件のうち、確認できた情報が少ないため、点数と順位は表示していません。「未確認」は、条件に合わないという意味ではありません。
+                入力条件のうち、確認できた情報が少ないため、一致率と順位は表示していません。「未確認」は、条件に合わないという意味ではありません。
               </p>
               <ul className="space-y-4">
                 {output.insufficient.map((r) => (
-                  <ResultCard key={r.agent.id} r={r} />
+                  <ResultCard key={r.agent.id} r={r} input={lastInput} rankLabel={null} />
                 ))}
               </ul>
             </div>
@@ -276,33 +304,38 @@ export default function DiagnosisPage() {
   );
 }
 
-function ResultCard({ r }: { r: DiagnosisResult }) {
+function ResultCard({ r, input, rankLabel }: { r: DiagnosisResult; input: DiagnosisInput | null; rankLabel: string | null }) {
   const group = (outcome: "match" | "mismatch" | "unknown") => r.reasons.filter((x) => x.outcome === outcome);
   const matches = group("match");
   const mismatches = group("mismatch");
   const unknowns = group("unknown");
+  const confirmRate = Math.round(r.coverage * 100);
+  const actions = nextActions(r, input);
 
   return (
     <li className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 list-none">
       <div className="flex items-start justify-between gap-3">
         <div>
-          {r.rank != null && (
-            <p className="text-xs text-slate-500 dark:text-slate-400">{r.rank}位（参考）</p>
-          )}
+          {rankLabel && <p className="text-xs text-slate-500 dark:text-slate-400">{rankLabel}</p>}
           <h3 className="text-base font-bold">{r.agent.name}</h3>
         </div>
         <div className="text-right flex-shrink-0">
           {r.score == null ? (
             <p className="text-sm font-semibold text-slate-500">判定材料不足</p>
           ) : (
-            <p className="text-2xl font-black text-blue-700 dark:text-blue-300">
-              {r.score}
-              <span className="text-sm font-bold">%</span>
-              <span className="ml-1 text-[10px] font-normal text-slate-500">参考スコア</span>
-            </p>
+            <>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400">確認済み条件の一致率</p>
+              <p className="text-2xl font-black text-blue-700 dark:text-blue-300">
+                {r.score}
+                <span className="text-sm font-bold">%</span>
+              </p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                一致配点 {r.matched} ／ 確認済み配点 {r.checked}
+              </p>
+            </>
           )}
           <p className="text-[11px] text-slate-500 dark:text-slate-400">
-            確認できた項目 {r.checked}/{r.requested}（配点）
+            条件の確認率 {confirmRate}%（確認 {r.checked} ／ 全体 {r.requested}）
           </p>
         </div>
       </div>
@@ -312,11 +345,23 @@ function ResultCard({ r }: { r: DiagnosisResult }) {
           <div className="h-full bg-blue-600" style={{ width: `${r.score}%` }} />
         </div>
       )}
+      <p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">
+        実際の案件とのマッチ率ではなく、公式サイト等で確認できた条件にもとづく値です。
+      </p>
 
       <div className="mt-4 space-y-3 text-sm">
         <ReasonGroup title="条件一致" mark="○" cls="text-emerald-600 dark:text-emerald-400" items={matches} />
         <ReasonGroup title="条件不一致" mark="×" cls="text-red-600 dark:text-red-400" items={mismatches} />
-        <ReasonGroup title="未確認（点数に含めません）" mark="？" cls="text-slate-400" items={unknowns} />
+        <ReasonGroup title="未確認（一致率に含めません）" mark="？" cls="text-slate-400" items={unknowns} />
+      </div>
+
+      <div className="mt-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 p-3">
+        <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">次に確認すること</p>
+        <ul className="mt-1 list-disc pl-5 space-y-1 text-sm leading-snug">
+          {actions.map((a, i) => (
+            <li key={i}>{a}</li>
+          ))}
+        </ul>
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -325,6 +370,71 @@ function ResultCard({ r }: { r: DiagnosisResult }) {
       </div>
     </li>
   );
+}
+
+/** 診断結果から、次に何を確認すればよいかを案内する（未確認の案件が存在するかのような表現は使わない） */
+function nextActions(r: DiagnosisResult, input: DiagnosisInput | null): string[] {
+  const items: string[] = [];
+  const by = (pred: (label: string) => boolean) => r.reasons.find((x) => pred(x.label));
+  const langName = input && input.language !== "other" ? LANG_LABELS[input.language] : "";
+
+  const lang = by((l) => l === "使用言語");
+  if (lang) {
+    items.push(
+      lang.outcome === "match"
+        ? `${langName}の案件の詳細（求められるスキル・経験）を、公式サイトで確認する`
+        : `${langName}の案件を扱っているか、公式サイトや面談で確認する`
+    );
+  }
+
+  const work = by((l) => l === "フルリモート" || l === "リモート");
+  if (work) {
+    const full = work.label === "フルリモート";
+    items.push(
+      work.outcome === "match"
+        ? full
+          ? "フルリモート案件の詳細（出社の有無・頻度）を確認する"
+          : "リモート案件の詳細（出社の頻度・条件）を確認する"
+        : full
+          ? "フルリモートの案件があるか、公式サイトや面談で確認する"
+          : "リモート勤務が可能な案件があるか、公式サイトや面談で確認する"
+    );
+  }
+
+  const combo = by((l) => l.endsWith("×フルリモート"));
+  if (combo) {
+    items.push(
+      combo.outcome === "match"
+        ? `${langName}のフルリモート案件の詳細を確認する`
+        : `${langName}でフルリモートの案件があるか、公式サイトや面談で確認する`
+    );
+  }
+
+  const week3 = by((l) => l === "週3日以下");
+  if (week3) {
+    items.push(
+      week3.outcome === "match"
+        ? "週3日以下の案件の稼働日数・条件を確認する"
+        : "週3日以下の案件があるか、公式サイトや面談で確認する"
+    );
+  }
+
+  const region = by((l) => l === "勤務地");
+  if (region) {
+    items.push(
+      region.outcome === "match"
+        ? "希望地域の案件の勤務地・出社条件を確認する"
+        : "希望地域の案件があるか、公式サイトや面談で確認する"
+    );
+  }
+
+  items.push(
+    input && input.desiredPriceMan != null
+      ? `希望単価（月${input.desiredPriceMan}万円）や稼働条件を、担当者との面談で相談する`
+      : "希望単価や稼働条件を、担当者との面談で相談する"
+  );
+  items.push("実務経験の条件は案件ごとに異なるため、気になる案件の応募条件を確認する");
+  return items;
 }
 
 function ReasonGroup({
