@@ -9,6 +9,7 @@ import FreelanceLayout from "./components/FreelanceLayout";
 import FreelanceHome from "./pages/FreelanceHome";
 import AgentsPage from "./pages/AgentsPage";
 import DiagnosisPage from "./pages/DiagnosisPage";
+import JavaGuidePage from "./pages/JavaGuidePage";
 import NotFound from "./pages/NotFound";
 
 export default function FreelanceApp() {
@@ -18,6 +19,7 @@ export default function FreelanceApp() {
         <Route index element={<FreelanceHome />} />
         <Route path="agents" element={<AgentsPage />} />
         <Route path="diagnosis" element={<DiagnosisPage />} />
+        <Route path="java" element={<JavaGuidePage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </FreelanceLayout>

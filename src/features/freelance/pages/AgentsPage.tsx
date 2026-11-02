@@ -162,6 +162,13 @@ export default function AgentsPage() {
         >
           条件別診断をはじめる
         </Link>
+        <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+          Javaエンジニアの方は、
+          <Link to="/freelance/java/" className="underline">
+            Javaフリーランスエージェントの選び方
+          </Link>
+          もあわせてご覧ください。
+        </p>
       </section>
     </div>
   );
