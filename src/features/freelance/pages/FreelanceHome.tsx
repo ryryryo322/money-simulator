@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useDocumentHead } from "../lib/useDocumentHead";
 import { SERVICE_NAME } from "../config";
 import { AGENTS } from "../data/agents";
+import { ARTICLES } from "../data/articles";
 
 const CTA_PRIMARY =
   "inline-flex items-center justify-center rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 transition-colors";
@@ -102,6 +103,25 @@ export default function FreelanceHome() {
             </li>
           ))}
         </ol>
+      </section>
+
+      {/* ガイド記事 */}
+      <section>
+        <h2 className="text-lg font-bold mb-4">ガイド記事</h2>
+        <ul className="space-y-3">
+          {ARTICLES.map((a) => (
+            <li key={a.path}>
+              <Link
+                to={a.path}
+                className="block rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
+              >
+                <p className="text-base font-bold">{a.title}</p>
+                <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{a.summary}</p>
+                <p className="mt-3 text-sm font-medium text-blue-700 dark:text-blue-300">記事を読む →</p>
+              </Link>
+            </li>
+          ))}
+        </ul>
       </section>
 
       {/* 掲載ポリシー */}

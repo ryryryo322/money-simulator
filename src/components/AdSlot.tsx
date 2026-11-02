@@ -75,17 +75,6 @@ const ADS: AdItem[] = [
     pixelSrc: undefined,
   },
   {
-    id: "sumai-iroha",
-    href: "https://px.a8.net/svt/ejp?a8mat=4B7QWW+1SW9PU+5V18+5YJRM",
-    label: "すまいのいろはPlus｜家探し・家づくり",
-    description: "住まい探し・家づくり",
-    subtext: "マイホームを検討中の方へ。情報収集はここから →",
-    icon: "🏡",
-    color: "green",
-    contexts: ["nisa"],
-    pixelSrc: undefined,
-  },
-  {
     id: "alterna",
     href: "https://px.a8.net/svt/ejp?a8mat=4B7QWW+EVUWI+5PYG+5YJRM",
     label: "ALTERNA（オルタナ）｜デジタル証券で資産運用",

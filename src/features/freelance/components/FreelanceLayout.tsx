@@ -55,6 +55,9 @@ export default function FreelanceLayout({ children }: { children: ReactNode }) {
             <Link to="/freelance/diagnosis/" className="hover:text-blue-700 dark:hover:text-blue-300">
               条件別診断
             </Link>
+            <Link to="/freelance/java/" className="hover:text-blue-700 dark:hover:text-blue-300">
+              Javaフリーランスの選び方
+            </Link>
           </div>
           <p>
             掲載情報は第三者メディア等で公開されている情報にもとづき、各項目に出典と時点を記載しています。
