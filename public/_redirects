@@ -1,0 +1,4 @@
+# 旧URL → 新URL（301：恒久的な移動）
+# Javaガイド記事を /freelance/guide/ 配下へ移動（技術別の記事を増やせる構成にするため）
+/freelance/java    /freelance/guide/java/  301
+/freelance/java/   /freelance/guide/java/  301

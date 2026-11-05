@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useDocumentHead } from "../lib/useDocumentHead";
 import { SERVICE_NAME } from "../config";
 import { AGENTS } from "../data/agents";
-import { ARTICLES } from "../data/articles";
+import { GUIDE_PATH } from "../data/articles";
 
 const CTA_PRIMARY =
   "inline-flex items-center justify-center rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 transition-colors";
@@ -54,7 +54,7 @@ export default function FreelanceHome() {
           >
             <p className="text-base font-bold">エージェント比較</p>
             <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-              Java案件の有無、案件数、フルリモート／リモート相談可、実務経験の目安、週3日以下、支払いサイト、福利厚生、対応地域を一覧で比較できます。
+              対応言語、案件数、フルリモート／リモート相談可、実務経験の目安、週3日以下、支払いサイト、福利厚生、対応地域を一覧で比較できます。
             </p>
             <p className="mt-3 text-sm font-medium text-blue-700 dark:text-blue-300">比較表を見る →</p>
           </Link>
@@ -71,9 +71,9 @@ export default function FreelanceHome() {
         </div>
       </section>
 
-      {/* おすすめの探し方 */}
+      {/* 探し方の手順 */}
       <section>
-        <h2 className="text-lg font-bold mb-4">おすすめの探し方</h2>
+        <h2 className="text-lg font-bold mb-4">エージェントの探し方</h2>
         <ol className="space-y-3">
           {[
             {
@@ -105,23 +105,19 @@ export default function FreelanceHome() {
         </ol>
       </section>
 
-      {/* ガイド記事 */}
+      {/* ガイド（特定の言語を前面に出さず、一覧への入口だけを置く） */}
       <section>
-        <h2 className="text-lg font-bold mb-4">ガイド記事</h2>
-        <ul className="space-y-3">
-          {ARTICLES.map((a) => (
-            <li key={a.path}>
-              <Link
-                to={a.path}
-                className="block rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
-              >
-                <p className="text-base font-bold">{a.title}</p>
-                <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{a.summary}</p>
-                <p className="mt-3 text-sm font-medium text-blue-700 dark:text-blue-300">記事を読む →</p>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <h2 className="text-lg font-bold mb-4">ガイド</h2>
+        <Link
+          to={GUIDE_PATH}
+          className="block rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
+        >
+          <p className="text-base font-bold">技術別・テーマ別のガイド</p>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+            エージェントを比較するときの見方を、言語や働き方、実務経験などの切り口ごとにまとめています。
+          </p>
+          <p className="mt-3 text-sm font-medium text-blue-700 dark:text-blue-300">ガイド一覧を見る →</p>
+        </Link>
       </section>
 
       {/* 掲載ポリシー */}

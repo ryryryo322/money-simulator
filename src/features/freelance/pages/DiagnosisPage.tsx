@@ -13,6 +13,7 @@ import AgentDetails from "../components/AgentDetails";
 import { AdNotice } from "../components/Notices";
 
 const YEARS: { label: string; value: number }[] = [
+  { label: "指定しない", value: -1 },
   { label: "1年未満", value: 0 },
   { label: "1年", value: 1 },
   { label: "2年", value: 2 },
@@ -21,10 +22,13 @@ const YEARS: { label: string; value: number }[] = [
   { label: "6年以上", value: 6 },
 ];
 
+// 表示順は五十音・アルファベット順（特定の言語を先頭にしない）
+const LANG_OPTIONS: LangKey[] = ["csharp", "java", "javascript", "php", "python"];
+
 const WORK_STYLES: { label: string; value: WorkStyle; hint: string }[] = [
   { label: "フルリモート", value: "full_remote", hint: "出社なしで働きたい" },
   { label: "リモート相談可", value: "remote_ok", hint: "週数日の出社があってもよい" },
-  { label: "出社・常駐でも可", value: "onsite_ok", hint: "働き方にこだわらない" },
+  { label: "こだわらない", value: "onsite_ok", hint: "出社・常駐も含めて検討" },
 ];
 
 const fieldLabel = "block text-sm font-semibold mb-2";
@@ -35,16 +39,16 @@ export default function DiagnosisPage() {
   useDocumentHead({
     title: `条件別診断｜ITフリーランスエージェントとの適合度｜${SERVICE_NAME}`,
     description:
-      "使用言語・実務経験・希望の働き方・勤務地を入力すると、ITフリーランスエージェントとの適合度を理由つきで表示。確認できていない項目は点数に含めません。",
+      "使用言語・希望の働き方・勤務地などを入力すると、ITフリーランスエージェントごとに、確認できた条件の一致率を理由つきで表示。確認できていない項目は「未確認」とし、計算に含めません。",
     jsonLd: breadcrumbJsonLd([
       { name: SERVICE_NAME, url: `${SITE_ORIGIN}/freelance/` },
       { name: "条件別診断", url: `${SITE_ORIGIN}/freelance/diagnosis/` },
     ]),
   });
 
-  const [language, setLanguage] = useState<LangKey | "other">("java");
-  const [years, setYears] = useState<number>(3);
-  const [workStyle, setWorkStyle] = useState<WorkStyle>("full_remote");
+  const [language, setLanguage] = useState<LangKey | "other">("other");
+  const [years, setYears] = useState<number>(-1);
+  const [workStyle, setWorkStyle] = useState<WorkStyle>("onsite_ok");
   const [region, setRegion] = useState<RegionKey | "any">("any");
   const [wantWeek3, setWantWeek3] = useState(false);
   const [price, setPrice] = useState<string>("");
@@ -77,7 +81,7 @@ export default function DiagnosisPage() {
     setOutput(diagnose(AGENTS, input));
     track("freelance_diagnosis_complete", {
       language,
-      years,
+      years: years >= 0 ? years : undefined,
       work_style: workStyle,
       region,
       want_week3: wantWeek3,
@@ -129,13 +133,16 @@ export default function DiagnosisPage() {
             value={language}
             onChange={(e) => setLanguage(e.target.value as LangKey | "other")}
           >
-            {(Object.keys(LANG_LABELS) as LangKey[]).map((k) => (
+            <option value="other">指定しない・その他</option>
+            {LANG_OPTIONS.map((k) => (
               <option key={k} value={k}>
                 {LANG_LABELS[k]}
               </option>
             ))}
-            <option value="other">その他</option>
           </select>
+          <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+            ※ 指定しない場合や、一覧にない言語の場合は、言語では判定しません。
+          </p>
         </div>
 
         <div>
