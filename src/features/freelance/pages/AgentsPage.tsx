@@ -13,7 +13,7 @@ import { track } from "../lib/track";
 export default function AgentsPage() {
   useDocumentHead({
     title: `ITフリーランスエージェント比較（${AGENTS.length}社）｜${SERVICE_NAME}`,
-    description: `レバテックフリーランス・ギークスジョブ・ITプロパートナーズ・Midworks・PE-BANKを、Java案件・フルリモート・リモート相談可・支払いサイト・福利厚生・対応地域で比較。出典と時点つき、未確認の項目は「未確認」と表示。`,
+    description: `ITプロパートナーズ・ギークスジョブ・PE-BANK・Midworks・レバテックフリーランスを、対応言語・案件の種類・フルリモートとリモート相談可・週3日以下の案件・支払いサイト・福利厚生・対応地域で比較。出典と時点つき、未確認の項目は「未確認」と表示。`,
     jsonLd: breadcrumbJsonLd([
       { name: SERVICE_NAME, url: `${SITE_ORIGIN}/freelance/` },
       { name: "エージェント比較", url: `${SITE_ORIGIN}/freelance/agents/` },
@@ -163,11 +163,11 @@ export default function AgentsPage() {
           条件別診断をはじめる
         </Link>
         <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-          Javaエンジニアの方は、
-          <Link to="/freelance/java/" className="underline">
-            Javaフリーランスエージェントの選び方
+          エージェントを比べるときの見方は、技術別・テーマ別の
+          <Link to="/freelance/guide/" className="underline">
+            ガイド
           </Link>
-          もあわせてご覧ください。
+          でも解説しています。
         </p>
       </section>
     </div>

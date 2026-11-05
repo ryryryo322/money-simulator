@@ -9,7 +9,7 @@ import { useScrollTop } from "@/hooks/useScrollTop";
 import { SERVICE_NAME } from "../config";
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
-  `px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+  `px-1.5 sm:px-3 py-2 rounded-lg text-[13px] sm:text-sm font-medium whitespace-nowrap transition-colors ${
     isActive
       ? "bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
       : "text-slate-600 hover:text-blue-700 dark:text-slate-300 dark:hover:text-blue-300"
@@ -21,9 +21,9 @@ export default function FreelanceLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans antialiased">
       <header className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur border-b border-slate-200 dark:border-slate-800">
-        <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
+        <div className="max-w-5xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-between gap-2 sm:gap-3">
           <Link to="/freelance/" className="flex items-baseline gap-2 min-w-0">
-            <span className="text-lg font-black tracking-tight text-blue-700 dark:text-blue-400 whitespace-nowrap">
+            <span className="text-base sm:text-lg font-black tracking-tight text-blue-700 dark:text-blue-400 whitespace-nowrap">
               {SERVICE_NAME}
             </span>
             <span className="hidden sm:inline text-xs text-slate-500 dark:text-slate-400">
@@ -55,8 +55,8 @@ export default function FreelanceLayout({ children }: { children: ReactNode }) {
             <Link to="/freelance/diagnosis/" className="hover:text-blue-700 dark:hover:text-blue-300">
               条件別診断
             </Link>
-            <Link to="/freelance/java/" className="hover:text-blue-700 dark:hover:text-blue-300">
-              Javaフリーランスの選び方
+            <Link to="/freelance/guide/" className="hover:text-blue-700 dark:hover:text-blue-300">
+              ガイド
             </Link>
           </div>
           <p>
