@@ -50,7 +50,10 @@ export default function AgentLink({ agent, placement, className, showPixel, chil
         <span aria-hidden="true">↗</span>
       </a>
       {aff && (
-        <span className="text-[10px] leading-none rounded border border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 px-1 py-0.5">
+        <span
+          title="広告（アフィリエイト）"
+          className="text-[11px] font-semibold leading-none rounded border border-slate-400 dark:border-slate-500 text-slate-600 dark:text-slate-300 px-1.5 py-1"
+        >
           PR
         </span>
       )}

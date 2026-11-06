@@ -120,13 +120,14 @@ export default function FreelanceHome() {
         </Link>
       </section>
 
-      {/* 掲載ポリシー */}
+      {/* 掲載情報のルール（広告の説明はここで1回だけ。フッターには重ねない） */}
       <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 text-sm text-slate-600 dark:text-slate-300 leading-relaxed space-y-2">
         <h2 className="text-base font-bold text-slate-800 dark:text-slate-100">掲載情報のルール</h2>
         <ul className="list-disc pl-5 space-y-1">
-          <li>各項目に出典と時点を記載します。確認できない項目は「未確認」と表示します。</li>
-          <li>表示順は五十音順で固定。広告の有無や報酬額で並び順・診断結果は変わりません。</li>
-          <li>一部のリンクは広告（アフィリエイト）です。広告のリンクには「PR」と表示します。</li>
+          <li>各項目に、情報の出典と確認時点を記載しています。</li>
+          <li>確認できない項目は「未確認」と表示します。「未確認」は、非対応という意味ではありません。</li>
+          <li>エージェントの表示順は、サービス名の五十音順で固定です。</li>
+          <li>一部のリンクにはアフィリエイト広告を含みます。広告の有無や報酬額によって、比較結果・診断結果が変わることはありません。</li>
         </ul>
       </section>
     </div>
